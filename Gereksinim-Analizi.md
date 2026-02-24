@@ -41,8 +41,8 @@ Bu özellik sayesinde uygulama, kullanıcı deneyimine dayalı dinamik bir içer
    - **Açıklama:** Sistem, kullanıcıların yaptıkları yorumlara başka kullanıcılar tarafından beğeni (like) bırakılması durumunda, ilgili kullanıcıya bildirim gönderilir.
 
 10. **Mekan Sahibi Mekan Silme** (Sudenaz Kocabıçak)
-   - **API Metodu:** `DELETE /admin/venues/{venuesId}`
-   - **Açıklama:** Sistem, mekan sahiplerinin kendilerine ait işletme kayıtlarını sistemden silebilmesini sağlamalıdır. Silme işlemi yalnızca ilgili mekanın sahibi tarafından gerçekleştirilebilmelidir.
+    - **API Metodu:** `DELETE /admin/venues/{venuesId}`
+    - **Açıklama:** Sistem, mekan sahiplerinin kendilerine ait işletme kayıtlarını sistemden silebilmesini sağlamalıdır. Silme işlemi yalnızca ilgili mekanın sahibi tarafından gerçekleştirilebilmelidir.
  
 11. **Mekan Sahibi Üye Olma** (Sudenaz Kocabıçak)
    - **API Metodu:** `POST /admin/register`
