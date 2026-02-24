@@ -89,52 +89,52 @@ Bu özellik sayesinde uygulama, kullanıcı deneyimine dayalı dinamik bir içer
     - **Açıklama:** Sistem, kullanıcının konum bilgisine göre belirlenen mesafe aralığındaki mekanları listeleyebilmelidir. Mekanlar, kullanıcıya olan uzaklık bilgisi ile birlikte sunulmalıdır.
 
 22. **Mekanları Harita Üzerinde Gösterme** (İrem Ballı)
-   - **API Metodu:** `GET /venues/map`
-   - **Açıklama:** Sistem, kayıtlı mekanların konum bilgilerini harita arayüzünde işaretleyerek kullanıcıların mekânsal olarak görüntüleyebilmesini sağlamalıdır. Her mekan için enlem ve boylam bilgisi sağlanmalıdır.           
+    - **API Metodu:** `GET /venues/map`
+    - **Açıklama:** Sistem, kayıtlı mekanların konum bilgilerini harita arayüzünde işaretleyerek kullanıcıların mekânsal olarak görüntüleyebilmesini sağlamalıdır. Her mekan için enlem ve boylam bilgisi sağlanmalıdır.           
 
 23. **Konum ve Paylaşım Gizlilik Ayarı** (İrem Ballı)
-   - **API Metodu:** `POST /auth/privacy`
-   - **Açıklama:** Sistem, kullanıcıların konum bilgilerini ve paylaştıkları içerikleri kimlerin görebileceğini belirleyebilecekleri gizlilik ayarları sunmalıdır. Kullanıcı, profil ayarları üzerinden görünürlük seviyesini yönetebilmelidir.
+    - **API Metodu:** `POST /auth/privacy`
+    - **Açıklama:** Sistem, kullanıcıların konum bilgilerini ve paylaştıkları içerikleri kimlerin görebileceğini belirleyebilecekleri gizlilik ayarları sunmalıdır. Kullanıcı, profil ayarları üzerinden görünürlük seviyesini yönetebilmelidir.
 
 24. **Yorum Beğenme** (İrem Ballı)
-   - **API Metodu:** `POST /comments/{id}/like`
-   - **Açıklama:** Sistem, kullanıcıların diğer kullanıcılar tarafından yapılan yorumları beğenebilmesini sağlamalıdır. Beğeni işlemi, yorumun faydalı veya olumlu bulunduğunu göstermek amacıyla yapılır ve yorum üzerinde beğeni sayısı olarak görüntülenir.
+    - **API Metodu:** `POST /comments/{id}/like`
+    - **Açıklama:** Sistem, kullanıcıların diğer kullanıcılar tarafından yapılan yorumları beğenebilmesini sağlamalıdır. Beğeni işlemi, yorumun faydalı veya olumlu bulunduğunu göstermek amacıyla yapılır ve yorum üzerinde beğeni sayısı olarak görüntülenir.
 
 25. **Admin Profiline Mekan için Gönderi Ekleme** (İrem Ballı)
-   - **API Metodu:** `POST /admin/venues/{id}/photo`
-   - **Açıklama:** Sistem, yetkili yöneticilerin belirli bir mekana fotoğraf yükleyebilmesini sağlamalıdır. Yüklenen görseller ilgili mekanın detay sayfasında görüntülenmelidir.
+    - **API Metodu:** `POST /admin/venues/{id}/photo`
+    - **Açıklama:** Sistem, yetkili yöneticilerin belirli bir mekana fotoğraf yükleyebilmesini sağlamalıdır. Yüklenen görseller ilgili mekanın detay sayfasında görüntülenmelidir.
 
 26. **Saat Güncelleme** (Ayşe Küçük)
-   - **API Metodu:** `PUT /admin/venues/{id}/hours`
-   - **Açıklama:** Sistem, yetkili yöneticinin ilgili mekana ait çalışma saatlerini güncelleyebilmesini sağlamalıdır. Güncellenen bilgiler kullanıcı arayüzünde anlık ve doğru şekilde görüntülenmelidir.
+    - **API Metodu:** `PUT /admin/venues/{id}/hours`
+    - **Açıklama:** Sistem, yetkili yöneticinin ilgili mekana ait çalışma saatlerini güncelleyebilmesini sağlamalıdır. Güncellenen bilgiler kullanıcı arayüzünde anlık ve doğru şekilde görüntülenmelidir.
 
 27. **Konum Güncelleme** (Ayşe Küçük)
-   - **API Metodu:** `PUT /admin/venues/{id}/location`
-   - **Açıklama:** Sistem, yetkili yöneticinin mekana ait coğrafi konum bilgilerini (enlem ve boylam) güncelleyebilmesini sağlamalıdır. Güncellenen konum bilgisi harita üzerinde doğru şekilde yansıtılmalıdır.
+    - **API Metodu:** `PUT /admin/venues/{id}/location`
+    - **Açıklama:** Sistem, yetkili yöneticinin mekana ait coğrafi konum bilgilerini (enlem ve boylam) güncelleyebilmesini sağlamalıdır. Güncellenen konum bilgisi harita üzerinde doğru şekilde yansıtılmalıdır.
 
 28. **Menü Güncelleme** (Ayşe Küçük)
-   - **API Metodu:** `PUT /admin/venues/{id}/menu`
-   - **Açıklama:** Sistem, yetkili yöneticinin mekana ait menü içeriklerini güncelleyebilmesini sağlamalıdır. Yapılan değişiklikler kullanıcılar tarafından görüntülenebilir olmalıdır.
+    - **API Metodu:** `PUT /admin/venues/{id}/menu`
+    - **Açıklama:** Sistem, yetkili yöneticinin mekana ait menü içeriklerini güncelleyebilmesini sağlamalıdır. Yapılan değişiklikler kullanıcılar tarafından görüntülenebilir olmalıdır.
 
 29. **Şifre Sıfırlama** (Ayşe Küçük)
-   - **API Metodu: POST /auth/forgot-password
-   - **Açıklama:** Sistem, kullanıcıların ve mekan sahiplerinin şifrelerini unutmaları durumunda e-posta doğrulaması aracılığıyla şifre sıfırlama talebinde bulunabilmelerini sağlamalıdır. Doğrulama sonrasında kullanıcı ve mekan sahibi yeni bir şifre belirleyebilmelidir.
+    - **API Metodu: POST /auth/forgot-password
+    - **Açıklama:** Sistem, kullanıcıların ve mekan sahiplerinin şifrelerini unutmaları durumunda e-posta doğrulaması aracılığıyla şifre sıfırlama talebinde bulunabilmelerini sağlamalıdır. Doğrulama sonrasında kullanıcı ve mekan sahibi yeni bir şifre belirleyebilmelidir.
 
 30. **Favori Mekan Ekleme** (Ayşe Küçük)
-   - **API Metodu:** `POST /favorites`
-   - **Açıklama:** Sistem, kullanıcıların beğendikleri mekanları kişisel favori listelerine ekleyebilmelerini sağlamalıdır. Eklenen mekanlar profil üzerinden görüntülenebilmelidir.
+    - **API Metodu:** `POST /favorites`
+    - **Açıklama:** Sistem, kullanıcıların beğendikleri mekanları kişisel favori listelerine ekleyebilmelerini sağlamalıdır. Eklenen mekanlar profil üzerinden görüntülenebilmelidir.
 
 31. **Favori Mekan Silme** (Ayşe Küçük)
-   - **API Metodu:** `DELETE /favorites/{venuesId}`
-   - **Açıklama:** Sistem, kullanıcıların daha önce favorilerine ekledikleri mekanları favori listesinden çıkarabilmesini sağlamalıdır. Silme işlemi sonrasında ilgili mekan kullanıcının favoriler listesinde görünmemelidir.
+    - **API Metodu:** `DELETE /favorites/{venuesId}`
+    - **Açıklama:** Sistem, kullanıcıların daha önce favorilerine ekledikleri mekanları favori listesinden çıkarabilmesini sağlamalıdır. Silme işlemi sonrasında ilgili mekan kullanıcının favoriler listesinde görünmemelidir.
 
 32. **Arkadaş Ekleme (İstek Gönderme)** (Ayşe Küçük)
-   - **API Metodu:** `POST /friends/request`
-   - **Açıklama:** Sistem, kullanıcıların diğer kullanıcılara arkadaşlık isteği gönderebilmesini sağlamalıdır. İstek karşı tarafın onayına sunulmalıdır.
+    - **API Metodu:** `POST /friends/request`
+    - **Açıklama:** Sistem, kullanıcıların diğer kullanıcılara arkadaşlık isteği gönderebilmesini sağlamalıdır. İstek karşı tarafın onayına sunulmalıdır.
 
 33. **Arkadaşlık İsteği Bildirimi** (Ayşe Küçük)
-   - **API Metodu:** `GET /notifications/friend-requests`
-   - **Açıklama:** Sistem, kullanıcıya gönderilen arkadaşlık isteklerinin bildirim olarak görüntülenebilmesini sağlamalıdır. Kullanıcı gelen talepleri bu ekran üzerinden takip edebilmelidir.
+    - **API Metodu:** `GET /notifications/friend-requests`
+    - **Açıklama:** Sistem, kullanıcıya gönderilen arkadaşlık isteklerinin bildirim olarak görüntülenebilmesini sağlamalıdır. Kullanıcı gelen talepleri bu ekran üzerinden takip edebilmelidir.
     
      
 
