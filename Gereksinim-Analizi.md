@@ -7,8 +7,8 @@
    - **Açıklama:** Kullanıcıların ve mekan sahibinin sisteme giriş yaparak hizmetlere erişmesini sağlar. Email adresi ve şifre ile kimlik doğrulama yapılır. Başarılı giriş sonrası kullanıcıya ve mekan sahibine erişim izni verilir ve kişisel verilerin güvenliği sağlanır.
 
 2. **Kullanıcı Üye Olma** (Ceren Doğan)
-    -**API Metodu:** `POST /auth/register`
-    -**Açıklama:** Kullanıcıların yeni hesaplar oluşturarak sisteme kayıt olmasını sağlar. Kişisel bilgilerin toplanmasını (ad,soyad,doğum tarihi) ve hesap oluşturma işlemlerini içerir. Kullanıcılar email adresi,kullanıcı adı ve şifre belirleyerek hesap oluşturur.
+    - **API Metodu:** `POST /auth/register`
+    - **Açıklama:** Kullanıcıların yeni hesaplar oluşturarak sisteme kayıt olmasını sağlar. Kişisel bilgilerin toplanmasını (ad,soyad,doğum tarihi) ve hesap oluşturma işlemlerini içerir. Kullanıcılar email adresi,kullanıcı adı ve şifre belirleyerek hesap oluşturur.
      
 3. **Yorum Yapma** (Ceren Doğan)
     -**API Metodu:** `POST /comments`
