@@ -1,6 +1,6 @@
 # PROJE ADI
 
-> Meydone
+Meydone
 
 ---
 
