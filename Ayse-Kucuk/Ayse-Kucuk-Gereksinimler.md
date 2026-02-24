@@ -1,32 +1,27 @@
-Saat Güncelleme (Ayşe Küçük)
+1. **Saat Güncelleme** (Ayşe Küçük)
+    - **API Metodu:** `PUT /admin/venues/{id}/hours`
+    - **Açıklama:** Sistem, yetkili yöneticinin ilgili mekana ait çalışma saatlerini güncelleyebilmesini sağlamalıdır. Güncellenen bilgiler kullanıcı arayüzünde anlık olarak görüntülenmelidir.
 
-API Metodu: PUT /admin/venues/{id}/hours
-Açıklama: Sistem, yetkili yöneticinin ilgili mekana ait çalışma saatlerini güncelleyebilmesini sağlamalıdır. Güncellenen bilgiler kullanıcı arayüzünde anlık ve doğru şekilde görüntülenmelidir.
-Konum Güncelleme (Ayşe Küçük)
+2. **Konum Güncelleme** (Ayşe Küçük)
+    - **API Metodu:** `PUT /admin/venues/{id}/location`
+    - **Açıklama:** Sistem, yetkili yöneticinin mekana ait coğrafi konum bilgilerini (enlem ve boylam) güncelleyebilmesini sağlamalıdır.
 
-API Metodu: PUT /admin/venues/{id}/location
-Açıklama: Sistem, yetkili yöneticinin mekana ait coğrafi konum bilgilerini (enlem ve boylam) güncelleyebilmesini sağlamalıdır. Güncellenen konum bilgisi harita üzerinde doğru şekilde yansıtılmalıdır.
-Menü Güncelleme (Ayşe Küçük)
+3. **Menü Güncelleme** (Ayşe Küçük)
+    - **API Metodu:** `PUT /admin/venues/{id}/menu`
+    - **Açıklama:** Sistem, yetkili yöneticinin mekana ait menü içeriklerini güncelleyebilmesini sağlamalıdır.
 
-API Metodu: PUT /admin/venues/{id}/menu
-Açıklama: Sistem, yetkili yöneticinin mekana ait menü içeriklerini güncelleyebilmesini sağlamalıdır. Yapılan değişiklikler kullanıcılar tarafından görüntülenebilir olmalıdır.
-Şifre Sıfırlama (Ayşe Küçük)
+4. **Şifre Sıfırlama** (Ayşe Küçük)
+    - **API Metodu:** `POST /auth/reset-password`
+    - **Açıklama:** Kullanıcıların veya mekan sahiplerinin şifrelerini unutmaları durumunda, kayıtlı e-posta adresleri üzerinden güvenli bir şekilde şifre sıfırlama işlemi yapabilmelerini sağlar.
 
-API Metodu: POST /auth/forgot-password
-Açıklama: Sistem, kullanıcıların ve mekan sahiplerinin şifrelerini unutmaları durumunda e-posta doğrulaması aracılığıyla şifre sıfırlama talebinde bulunabilmelerini sağlamalıdır. Doğrulama sonrasında kullanıcı ve mekan sahibi yeni bir şifre belirleyebilmelidir.
-Favori Mekan Ekleme (Ayşe Küçük)
+5. **Hesap Silme** (Ayşe Küçük)
+    - **API Metodu:** `DELETE /auth/account`
+    - **Açıklama:** Kullanıcıların sistemdeki hesaplarını kalıcı olarak silebilmelerini sağlar. Silme işlemi sonrasında kullanıcıya ait kişisel veriler sistemden kaldırılmalıdır.
 
-API Metodu: POST /favorites
-Açıklama: Sistem, kullanıcıların beğendikleri mekanları kişisel favori listelerine ekleyebilmelerini sağlamalıdır. Eklenen mekanlar profil üzerinden görüntülenebilmelidir.
-Favori Mekan Silme (Ayşe Küçük)
+6. **Kullanıcı Bilgilerini Güncelleme** (Ayşe Küçük)
+    - **API Metodu:** `PUT /user/profile`
+    - **Açıklama:** Kullanıcıların profil bilgilerini (ad, soyad, profil fotoğrafı vb.) güncelleyebilmelerini sağlar.
 
-API Metodu: DELETE /favorites/{venuesId}
-Açıklama: Sistem, kullanıcıların daha önce favorilerine ekledikleri mekanları favori listesinden çıkarabilmesini sağlamalıdır. Silme işlemi sonrasında ilgili mekan kullanıcının favoriler listesinde görünmemelidir.
-Arkadaş Ekleme (İstek Gönderme) (Ayşe Küçük)
-
-API Metodu: POST /friends/request
-Açıklama: Sistem, kullanıcıların diğer kullanıcılara arkadaşlık isteği gönderebilmesini sağlamalıdır. İstek karşı tarafın onayına sunulmalıdır.
-Arkadaşlık İsteği Bildirimi (Ayşe Küçük)
-
-API Metodu: GET /notifications/friend-requests
-Açıklama: Sistem, kullanıcıya gönderilen arkadaşlık isteklerinin bildirim olarak görüntülenebilmesini sağlamalıdır. Kullanıcı gelen talepleri bu ekran üzerinden takip edebilmelidir.
+7. **Profil Fotoğrafı Ekleme/Güncelleme** (Ayşe Küçük)
+    - **API Metodu:** `POST /user/profile/photo`
+    - **Açıklama:** Kullanıcıların sistemde kendilerini temsil edecek bir profil fotoğrafı yüklemelerini veya mevcut fotoğraflarını değiştirmelerini sağlar.
