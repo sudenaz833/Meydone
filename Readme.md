@@ -6,7 +6,7 @@
 
 ## Proje Hakkında
 
-![Ürün Tanıtım Görseli](Product.png)
+![Ürün Tanıtım Görseli](/Meydone.jpeg)
 
 **Proje Tanımı:** 
 >  Meydone, kullanıcıların bulundukları konuma göre çevredeki mekanları kolayca keşfetmelerini sağlayan, harita tabanlı ve sosyal etkileşim odaklı bir platformdur. Amacımız, kullanıcıların hem yeni mekanlar keşfetmesini hem de deneyimlerini anlık paylaşımlar aracılığıyla sosyal bir ortamda paylaşmasını sağlamaktır.
