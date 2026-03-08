@@ -61,15 +61,15 @@ Bu özellik sayesinde uygulama, kullanıcı deneyimine dayalı dinamik bir içer
     - **Açıklama:** Sistem, kullanıcıların mekanın ortalama puan değerlerine göre sıralayabilmesini sağlamalıdır. Kullanıcı, listeleme ekranında mekanı yüksek puandan düşüğe (azalan) veya düşük puandan yükseğe (artan) olacak şekilde sıralayabilmelidir.
 
 15. **Kullanıcı Hesap Silme** (Sudenaz Kocabıçak)
-    - **API Metodu:** `DELETE /auth/account`
+    - **API Metodu:** `DELETE /users/account`
     - **Açıklama:** Sistem, kayıtlı kullanıcıların kendi hesaplarını kalıcı olarak silebilmesine olanak sağlamalıdır. Hesap silme işlemi, kullanıcının kimlik doğrulaması yapmasının ardından gerçekleştirilmelidir.
 
 16. **Kullanıcı Profil Güncelleme** (Sudenaz Kocabıçak)
-    - **API Metodu:** `PUT /auth/profile`
+    - **API Metodu:** `PUT /users/profile`
     - **Açıklama:** Sistem, kayıtlı kullanıcıların kendi profil bilgilerini güncelleyebilmesini sağlamalıdır. Kullanıcı; ad-soyad, profil fotoğrafı, telefon numarası, şifre ve benzeri kişisel bilgilerini düzenleyebilmelidir.
 
 17. **Profile Gönderi Ekleme** (Sudenaz Kocabıçak)
-    - **API Metodu:** `POST /auth/posts`
+    - **API Metodu:** `POST /users/posts`
     - **Açıklama:** Sistem, kayıtlı kullanıcıların kendi profilleri üzerinden gönderi (post) paylaşabilmesini sağlamalıdır. Kullanıcı, metin içeriği ve isteğe bağlı olarak görsel ekleyerek profilinde paylaşım yapabilmelidir.
 
 18. **Arkadaşlık İsteği Onay** (İrem Ballı)
@@ -93,7 +93,7 @@ Bu özellik sayesinde uygulama, kullanıcı deneyimine dayalı dinamik bir içer
     - **Açıklama:** Sistem, kayıtlı mekanların konum bilgilerini harita arayüzünde işaretleyerek kullanıcıların mekânsal olarak görüntüleyebilmesini sağlamalıdır. Her mekan için enlem ve boylam bilgisi sağlanmalıdır.           
 
 23. **Konum ve Paylaşım Gizlilik Ayarı** (İrem Ballı)
-    - **API Metodu:** `POST /auth/privacy`
+    - **API Metodu:** `POST /users/privacy`
     - **Açıklama:** Sistem, kullanıcıların konum bilgilerini ve paylaştıkları içerikleri kimlerin görebileceğini belirleyebilecekleri gizlilik ayarları sunmalıdır. Kullanıcı, profil ayarları üzerinden görünürlük seviyesini yönetebilmelidir.
 
 24. **Yorum Beğenme** (İrem Ballı)
