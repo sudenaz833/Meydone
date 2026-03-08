@@ -19,13 +19,13 @@
     - **Açıklama:** Sistem, kullanıcıların mekanın ortalama puan değerlerine göre sıralayabilmesini sağlamalıdır. Kullanıcı, listeleme ekranında mekanı yüksek puandan düşüğe (azalan) veya düşük puandan yükseğe (artan) olacak şekilde sıralayabilmelidir.
 
 6. **Kullanıcı Hesap Silme** (Sudenaz Kocabıçak)
-    - **API Metodu:** `DELETE /auth/account`
+    - **API Metodu:** `DELETE /users/account`
     - **Açıklama:** Sistem, kayıtlı kullanıcıların kendi hesaplarını kalıcı olarak silebilmesine olanak sağlamalıdır. Hesap silme işlemi, kullanıcının kimlik doğrulaması yapmasının ardından gerçekleştirilmelidir.
 
 7. **Kullanıcı Profil Güncelleme** (Sudenaz Kocabıçak)
-    - **API Metodu:** `PUT /auth/profile`
+    - **API Metodu:** `PUT /users/profile`
     - **Açıklama:** Sistem, kayıtlı kullanıcıların kendi profil bilgilerini güncelleyebilmesini sağlamalıdır. Kullanıcı; ad-soyad, profil fotoğrafı, telefon numarası, şifre ve benzeri kişisel bilgilerini düzenleyebilmelidir.
 
 8. **Profile Gönderi Ekleme** (Sudenaz Kocabıçak)
-    - **API Metodu:** `POST /auth/posts`
+    - **API Metodu:** `POST /users/posts`
     - **Açıklama:** Sistem, kayıtlı kullanıcıların kendi profilleri üzerinden gönderi (post) paylaşabilmesini sağlamalıdır. Kullanıcı, metin içeriği ve isteğe bağlı olarak görsel ekleyerek profilinde paylaşım yapabilmelidir.

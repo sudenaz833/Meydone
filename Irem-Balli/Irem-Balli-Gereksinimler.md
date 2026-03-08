@@ -19,7 +19,7 @@
     - **Açıklama:** Sistem, kayıtlı mekanların konum bilgilerini harita arayüzünde işaretleyerek kullanıcıların mekânsal olarak görüntüleyebilmesini sağlamalıdır. Her mekan için enlem ve boylam bilgisi sağlanmalıdır.
 
 6. **Konum ve Paylaşım Gizlilik Ayarı** (İrem Ballı)
-    - **API Metodu:** `POST /auth/privacy`
+    - **API Metodu:** `POST /users/privacy`
     - **Açıklama:** Sistem, kullanıcıların konum bilgilerini ve paylaştıkları içerikleri kimlerin görebileceğini belirleyebilecekleri gizlilik ayarları sunmalıdır. Kullanıcı, profil ayarları üzerinden görünürlük seviyesini yönetebilmelidir.
 
 7. **Yorum Beğenme** (İrem Ballı)
