@@ -14,6 +14,7 @@
   Meydone yalnızca bir keşif uygulaması değil, aynı zamanda sosyal bir platformdur. Kullanıcılar arkadaş bağlantıları kurabilir, anlık paylaşımlar yapabilir ve mekanlar hakkında yorum ve değerlendirmelerde bulunabilirler. Böylece kullanıcı deneyimleri daha görünür ve etkileşimli hale gelir.
   Ayrıca mekan sahipleri için sunduğumuz yönetim paneli sayesinde işletmeler kendi mekanlarını tanıtabilir, içerik paylaşabilir ve potansiyel müşterilere daha kolay ulaşabilirler. Bu sayede Meydone, hem kullanıcılar hem de işletmeler için değer üreten çift yönlü bir ekosistem oluşturmayı hedeflemektedir.
   Güvenilir altyapı, kullanıcı odaklı tasarım ve sürekli gelişim anlayışıyla Meydone, yerel keşfi daha sosyal, daha hızlı ve daha keyifli hale getirmeyi amaçlamaktadır.
+  
 
 **Proje Kategorisi:** 
 > Yerel İşletme Keşif Platformu
