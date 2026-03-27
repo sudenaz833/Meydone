@@ -1,0 +1,302 @@
+[
+  {
+    "id": 1,
+    "name": "Bilgisayar Mühendisliği",
+    "address": "Süleyman Demirel Üniversitesi",
+    "rating": 5,
+    "foodanddrink": [
+      "çay",
+      "kahve",
+      "pasta"
+    ],
+    "distance": "1",
+    "coordinates": [
+      37.83226584629666,
+      30.524732239878013
+    ],
+    "hours": [
+      {
+        "days": "Pazartesi-Cuma",
+        "open": "9:00",
+        "close": "23:00",
+        "isClosed": false
+      },
+      {
+        "days": "Cumartesi-Pazar",
+        "open": "11:00",
+        "close": "17:00",
+        "isClosed": false
+      }
+    ],
+    "comments": [
+      {
+        "author": "Sinan Yüksel",
+        "text": "Harika bir mekan! Çalışma ortamı çok rahat ve hizmet mükemmel.",
+        "rating": 5
+      },
+      {
+        "author": "Asım Yüksel",
+        "text": "Kahve çok lezzetli, personel çok nazik. Kesinlikle tekrar geleceğim.",
+        "rating": 4
+      },
+      {
+        "author": "Asım Sinan Yüksel",
+        "text": "Fiyatlar uygun ve mekan temiz. Özellikle pastaları çok beğendim.",
+        "rating": 5
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Merkez Kütüphane",
+    "address": "Süleyman Demirel Üniversitesi Kampüsü",
+    "rating": 4,
+    "foodanddrink": [
+      "kahve",
+      "su",
+      "sandviç"
+    ],
+    "distance": "0.5",
+    "coordinates": [
+      37.83000000000000,
+      30.52000000000000
+    ],
+    "hours": [
+      {
+        "days": "Pazartesi-Cuma",
+        "open": "8:00",
+        "close": "20:00",
+        "isClosed": false
+      },
+      {
+        "days": "Cumartesi",
+        "open": "9:00",
+        "close": "17:00",
+        "isClosed": false
+      },
+      {
+        "days": "Pazar",
+        "open": "10:00",
+        "close": "16:00",
+        "isClosed": false
+      }
+    ],
+    "comments": [
+      {
+        "author": "Ahmet Yılmaz",
+        "text": "Sessiz ve huzurlu bir çalışma ortamı. Çok memnun kaldım.",
+        "rating": 5
+      },
+      {
+        "author": "Ayşe Demir",
+        "text": "Kütüphane çok geniş ve modern. Kahve de güzel.",
+        "rating": 4
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "name": "Öğrenci Kafeteryası",
+    "address": "Süleyman Demirel Üniversitesi Merkez Kampüs",
+    "rating": 4,
+    "foodanddrink": ["yemek", "çorba", "salata", "tatlı"],
+    "distance": "0.8",
+    "coordinates": [37.83100000000000, 30.52300000000000],
+    "hours": [
+      {
+        "days": "Pazartesi-Cuma",
+        "open": "11:00",
+        "close": "15:00",
+        "isClosed": false
+      }
+    ],
+    "comments": [
+      {
+        "author": "Mehmet Kaya",
+        "text": "Fiyatlar çok uygun ve yemekler lezzetli. Öğrenciler için ideal.",
+        "rating": 4
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "name": "Spor Salonu",
+    "address": "Süleyman Demirel Üniversitesi Spor Kompleksi",
+    "rating": 5,
+    "foodanddrink": ["su", "enerji içeceği", "protein bar"],
+    "distance": "1.2",
+    "coordinates": [37.83300000000000, 30.52600000000000],
+    "hours": [
+      {
+        "days": "Pazartesi-Cuma",
+        "open": "6:00",
+        "close": "22:00",
+        "isClosed": false
+      },
+      {
+        "days": "Cumartesi-Pazar",
+        "open": "8:00",
+        "close": "20:00",
+        "isClosed": false
+      }
+    ],
+    "comments": [
+      {
+        "author": "Ali Veli",
+        "text": "Modern ekipmanlar ve temiz bir ortam. Kesinlikle tavsiye ederim.",
+        "rating": 5
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "name": "Kampüs Kafesi",
+    "address": "Süleyman Demirel Üniversitesi Giriş Kapısı",
+    "rating": 4,
+    "foodanddrink": ["kahve", "çay", "sandviç", "kek"],
+    "distance": "0.3",
+    "coordinates": [37.82900000000000, 30.52100000000000],
+    "hours": [
+      {
+        "days": "Pazartesi-Cuma",
+        "open": "7:00",
+        "close": "19:00",
+        "isClosed": false
+      },
+      {
+        "days": "Cumartesi",
+        "open": "9:00",
+        "close": "17:00",
+        "isClosed": false
+      }
+    ],
+    "comments": [
+      {
+        "author": "Zeynep Yıldız",
+        "text": "Kahve çok güzel ve personel çok nazik. Sabah kahvaltısı için ideal.",
+        "rating": 4
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "name": "Sağlık Merkezi",
+    "address": "Süleyman Demirel Üniversitesi Sağlık Birimi",
+    "rating": 5,
+    "foodanddrink": ["su", "ilaç"],
+    "distance": "0.7",
+    "coordinates": [37.83050000000000, 30.52250000000000],
+    "hours": [
+      {
+        "days": "Pazartesi-Cuma",
+        "open": "8:00",
+        "close": "17:00",
+        "isClosed": false
+      }
+    ],
+    "comments": [
+      {
+        "author": "Fatma Şahin",
+        "text": "Profesyonel hizmet ve yardımsever personel. Çok memnun kaldım.",
+        "rating": 5
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "name": "Öğrenci Merkezi",
+    "address": "Süleyman Demirel Üniversitesi Öğrenci Merkezi",
+    "rating": 4,
+    "foodanddrink": ["çay", "kahve", "bisküvi"],
+    "distance": "0.6",
+    "coordinates": [37.83150000000000, 30.52350000000000],
+    "hours": [
+      {
+        "days": "Pazartesi-Cuma",
+        "open": "9:00",
+        "close": "18:00",
+        "isClosed": false
+      }
+    ],
+    "comments": [
+      {
+        "author": "Can Özkan",
+        "text": "Rahat bir ortam ve güzel bir atmosfer. Ders çalışmak için uygun.",
+        "rating": 4
+      }
+    ]
+  },
+  {
+    "id": 8,
+    "name": "Açık Hava Amfisi",
+    "address": "Süleyman Demirel Üniversitesi Açık Alan",
+    "rating": 5,
+    "foodanddrink": ["su"],
+    "distance": "1.5",
+    "coordinates": [37.83400000000000, 30.52700000000000],
+    "hours": [
+      {
+        "days": "Pazartesi-Pazar",
+        "open": "00:00",
+        "close": "23:59",
+        "isClosed": false
+      }
+    ],
+    "comments": [
+      {
+        "author": "Deniz Aktaş",
+        "text": "Doğa ile iç içe harika bir ortam. Konserler ve etkinlikler için mükemmel.",
+        "rating": 5
+      }
+    ]
+  },
+  {
+    "id": 9,
+    "name": "Teknoloji Merkezi",
+    "address": "Süleyman Demirel Üniversitesi Teknoloji Fakültesi",
+    "rating": 5,
+    "foodanddrink": ["kahve", "çay", "su"],
+    "distance": "1.1",
+    "coordinates": [37.83280000000000, 30.52520000000000],
+    "hours": [
+      {
+        "days": "Pazartesi-Cuma",
+        "open": "8:00",
+        "close": "20:00",
+        "isClosed": false
+      }
+    ],
+    "comments": [
+      {
+        "author": "Burak Yılmaz",
+        "text": "Modern teknoloji ve harika bir çalışma ortamı. Projeler için ideal.",
+        "rating": 5
+      }
+    ]
+  },
+  {
+    "id": 10,
+    "name": "Kampüs Parkı",
+    "address": "Süleyman Demirel Üniversitesi Yeşil Alan",
+    "rating": 4,
+    "foodanddrink": ["su"],
+    "distance": "0.9",
+    "coordinates": [37.83180000000000, 30.52420000000000],
+    "hours": [
+      {
+        "days": "Pazartesi-Pazar",
+        "open": "06:00",
+        "close": "22:00",
+        "isClosed": false
+      }
+    ],
+    "comments": [
+      {
+        "author": "Elif Demir",
+        "text": "Huzurlu ve yeşil bir ortam. Yürüyüş yapmak ve dinlenmek için harika.",
+        "rating": 4
+      }
+    ]
+  }
+]
+
