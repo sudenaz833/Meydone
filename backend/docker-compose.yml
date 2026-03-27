@@ -1,0 +1,40 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: meydone-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: meydone
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${PORT:-4000}:${PORT:-4000}"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${PORT:-4000}
+      # Hostname `mongo` = Docker network (do not use localhost from host .env here)
+      MONGO_URL: mongodb://mongo:27017/meydone
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in a .env file or export it before docker compose up}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      ADMIN_REGISTER_SECRET: ${ADMIN_REGISTER_SECRET:-}
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+volumes:
+  mongo_data:
+    name: meydone_mongo_data
