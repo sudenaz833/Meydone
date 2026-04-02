@@ -1,0 +1,22 @@
+MEYDONE — Localhost’ta görmek için
+=================================
+
+1) MongoDB çalışıyor olmalı (Docker: backend klasöründe "docker compose up -d mongo")
+
+2) Proje kökünde TEK komut (hem API hem arayüz):
+
+   cd Desktop\meydoneCursor
+   npm install
+   npm run dev
+
+   Tarayıcı otomatik açılır: http://localhost:5173
+   Açılmazsa adres çubuğuna yazın: http://127.0.0.1:5173
+
+3) API adresi (doğrudan test): http://127.0.0.1:5020/api/health
+   (Port backend/.env içindeki PORT ile aynı; gerekirse değiştirin ve frontend/.env.development güncelleyin)
+
+Sorun giderme
+-------------
+- "Cannot GET" veya boş sayfa: Önce "npm run dev" çıktısında hem API hem WEB satırlarının hatasız olduğundan emin olun.
+- "Mongo" / "connect" hatası: MongoDB’yi başlatın (docker compose veya yerel servis).
+- Port meşgul: backend/.env içinde PORT değiştirin ve frontend/.env.development içindeki VITE_API_TARGET portunu aynı yapın.
