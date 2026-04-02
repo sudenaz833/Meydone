@@ -91,26 +91,30 @@ paths:
         '401':
           $ref: '#/components/responses/LoginUnauthorized'
 
-  /auth/forgot-password:
-    post:
+  /auth/update-password:
+    put:
       tags: [auth]
-      summary: Şifre Sıfırlama
-      description: Kullanıcının unuttuğu şifresini yenileyebilmesi için bir sıfırlama bağlantısı talep etmesini sağlar.
+      summary: Şifre Güncelleme
+      description: Sistem, giriş yapmış olan kullanıcıların ve mekan sahiplerinin mevcut şifrelerini doğrulayarak kendi profilleri üzerinden yeni bir şifre belirlemelerini ve şifrelerini güncellemelerini sağlamalıdır.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [email]
+              required: [currentPassword, newPassword]
               properties:
-                email:
+                currentPassword:
                   type: string
-                  format: email
-                  example: "leo.messi@example.com"
+                  format: password
+                  example: "eskiSifrem123!"
+                newPassword:
+                  type: string
+                  format: password
+                  example: "yeniSifrem456*"  
       responses:
         '200':
-          description: Şifre sıfırlama maili gönderildi
+          description: Şifre başarıyla güncellendi
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -461,7 +465,7 @@ paths:
     post:
       tags: [comments]
       summary: Yorum Yapma
-      description: Kullanıcının belirtilen mekana metin tabanlı bir değerlendirme (yorum) yapmasını sağlar. İsteğe bağlı olarak puanlama ile birlikte de kullanılabilir.
+      description: Kullanıcının belirtilen mekana metin tabanlı bir değerlendirme (yorum) yapmasını sağlar. 
       security:
         - bearerAuth: []
       requestBody:
@@ -493,7 +497,7 @@ paths:
     put:
       tags: [comments]
       summary: Yorum Güncelleme
-      description: Kullanıcının daha önce yapmış olduğu bir yorumun metnini veya verdiği puanı güncellemesini sağlar.
+      description: Kullanıcının daha önce yapmış olduğu bir yorumun metnini  güncellemesini sağlar.
       security:
         - bearerAuth: []
       parameters:
@@ -509,13 +513,12 @@ paths:
           application/json:
             schema:
               type: object
+              required: [content]
               properties:
                 content:
                   type: string
                   example: "Atmosferi harika, menüsü de güncellenmiş."
-                rating:
-                  type: integer
-                  example: 5
+      
       responses:
         '200':
           description: Yorum güncellendi
