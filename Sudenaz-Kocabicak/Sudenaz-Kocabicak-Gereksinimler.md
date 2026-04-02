@@ -24,7 +24,7 @@
 
 7. **Kullanıcı Profil Güncelleme** (Sudenaz Kocabıçak)
     - **API Metodu:** `PUT /users/profile`
-    - **Açıklama:** Sistem, kayıtlı kullanıcıların kendi profil bilgilerini güncelleyebilmesini sağlamalıdır. Kullanıcı; ad-soyad, profil fotoğrafı, telefon numarası, şifre ve benzeri kişisel bilgilerini düzenleyebilmelidir.
+    - **Açıklama:** Sistem, kayıtlı kullanıcıların kendi profil bilgilerini güncelleyebilmesini sağlamalıdır. Kullanıcı; ad-soyad, profil fotoğrafı ve telefon numarası benzeri kişisel bilgilerini düzenleyebilmelidir.
 
 8. **Profile Gönderi Ekleme** (Sudenaz Kocabıçak)
     - **API Metodu:** `POST /users/posts`

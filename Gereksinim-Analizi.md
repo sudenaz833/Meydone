@@ -4,7 +4,7 @@
 
 1. **Giriş Yapma** (Ceren Doğan)
    - **API Metodu:** `POST /auth/login`
-   - **Açıklama:** Kullanıcıların ve mekan sahibinin sisteme giriş yaparak hizmetlere erişmesini sağlar. Email adresi ve şifre ile kimlik doğrulama yapılır. Başarılı giriş sonrası kullanıcıya ve mekan sahibine erişim izni verilir ve kişisel verilerin güvenliği sağlanır.
+   - **Açıklama:** Kullanıcıların ve mekan sahibinin sisteme giriş yaparak hizmetlere erişmesini sağlar. Email adresi- kullanıcı adı ve şifre ile kimlik doğrulama yapılır. Başarılı giriş sonrası kullanıcıya ve mekan sahibine erişim izni verilir ve kişisel verilerin güvenliği sağlanır.
 
 2. **Kullanıcı Üye Olma** (Ceren Doğan)
     - **API Metodu:** `POST /auth/register`
@@ -12,7 +12,7 @@
      
 3. **Yorum Yapma** (Ceren Doğan)
     - **API Metodu:** `POST /comments`
-    - **Açıklama:** Kullanıcıların restoranlar hakkında deneyimlerini, puanlarını ve görüşlerini paylaşabilmesini sağlamak.
+    - **Açıklama:** Kullanıcıların restoranlar hakkında deneyimlerini, görüşlerini paylaşabilmesini sağlamak.
 Bu özellik sayesinde uygulama, kullanıcı deneyimine dayalı dinamik bir içerik yapısına sahip olur.
 
 4. **Yoruma Fotoğraf Ekleme** (Ceren Doğan)
@@ -26,7 +26,7 @@ Bu özellik sayesinde uygulama, kullanıcı deneyimine dayalı dinamik bir içer
 6. **Yorum Güncelleme** (Ceren Doğan)
    - **API Metodu:** `PUT /comments/{id}`
    - **Açıklama:** Kullanıcıların daha önce yaptıkları yorumları güncelleyebilmesini sağlamak.Bu özellik sayesinde kullanıcılar
-   yazım hatalarını düzeltebilir, puanlarını değiştirebilir veya deneyimleri değiştiyse yorumlarını güncelleyebilir.
+   yazım hatalarını düzeltebilir, deneyimleri değiştiyse yorumlarını güncelleyebilir.
 
 7. **İsimle Mekan Arama** (Ceren Doğan)
    - **API Metodu:**`GET /venues/search?name=`
@@ -46,7 +46,7 @@ Bu özellik sayesinde uygulama, kullanıcı deneyimine dayalı dinamik bir içer
  
 11. **Mekan Sahibi Üye Olma** (Sudenaz Kocabıçak)
     - **API Metodu:** `POST /admin/register`
-    - **Açıklama:** Mekan sahipleri yeni hesaplar oluşturarak sisteme kayıt olmasını sağlar. Adı, soyadı, konumu, açılış kapanış saatleri,menü içeriği ve ilgili fotoğraf yükleme bilgilerinin toplanmasını ve hesap oluşturma işlemlerini içerir.Mekan sahibi email adresi ve şifre belirleyerek hesap oluşturur.
+    - **Açıklama:** Mekan sahipleri yeni hesaplar oluşturarak sisteme kayıt olmasını sağlar. Adı, soyadı, konumu, açılış kapanış saatleri,menü içeriği ve ilgili fotoğraf yükleme bilgilerinin toplanmasını ve hesap oluşturma işlemlerini içerir.Mekan sahibi email adresi-kullanıcı adı ve şifre belirleyerek hesap oluşturur.
 
 12. **Puan Verme** (Sudenaz Kocabıçak)
     - **API Metodu:** `POST /venues/{id}/rate`
@@ -58,7 +58,7 @@ Bu özellik sayesinde uygulama, kullanıcı deneyimine dayalı dinamik bir içer
    
 14. **Puana Göre Sıralama** (Sudenaz Kocabıçak)
     - **API Metodu:** `GET /venues/sort?by=rating`
-    - **Açıklama:** Sistem, kullanıcıların mekanın ortalama puan değerlerine göre sıralayabilmesini sağlamalıdır. Kullanıcı, listeleme ekranında mekanı yüksek puandan düşüğe (azalan) veya düşük puandan yükseğe (artan) olacak şekilde sıralayabilmelidir.
+    - **Açıklama:** Sistem, kullanıcıların mekanın ortalama puan değerlerine göre sıralayabilmesini sağlamalıdır. Kullanıcı, listeleme ekranında mekanı yüksek puandan düşüğe (azalan) olacak şekilde sıralayabilmelidir.
 
 15. **Kullanıcı Hesap Silme** (Sudenaz Kocabıçak)
     - **API Metodu:** `DELETE /users/account`
@@ -66,7 +66,7 @@ Bu özellik sayesinde uygulama, kullanıcı deneyimine dayalı dinamik bir içer
 
 16. **Kullanıcı Profil Güncelleme** (Sudenaz Kocabıçak)
     - **API Metodu:** `PUT /users/profile`
-    - **Açıklama:** Sistem, kayıtlı kullanıcıların kendi profil bilgilerini güncelleyebilmesini sağlamalıdır. Kullanıcı; ad-soyad, profil fotoğrafı, telefon numarası, şifre ve benzeri kişisel bilgilerini düzenleyebilmelidir.
+    - **Açıklama:** Sistem, kayıtlı kullanıcıların kendi profil bilgilerini güncelleyebilmesini sağlamalıdır. Kullanıcı; ad-soyad, profil fotoğrafı, telefon numarası ve benzeri kişisel bilgilerini düzenleyebilmelidir.
 
 17. **Profile Gönderi Ekleme** (Sudenaz Kocabıçak)
     - **API Metodu:** `POST /users/posts`
@@ -116,9 +116,9 @@ Bu özellik sayesinde uygulama, kullanıcı deneyimine dayalı dinamik bir içer
     - **API Metodu:** `PUT /admin/venues/{id}/menu`
     - **Açıklama:** Sistem, yetkili yöneticinin mekana ait menü içeriklerini güncelleyebilmesini sağlamalıdır. Yapılan değişiklikler kullanıcılar tarafından görüntülenebilir olmalıdır.
 
-29. **Şifre Sıfırlama** (Ayşe Küçük)
-    - **API Metodu: POST /auth/forgot-password
-    - **Açıklama:** Sistem, kullanıcıların ve mekan sahiplerinin şifrelerini unutmaları durumunda e-posta doğrulaması aracılığıyla şifre sıfırlama talebinde bulunabilmelerini sağlamalıdır. Doğrulama sonrasında kullanıcı ve mekan sahibi yeni bir şifre belirleyebilmelidir.
+29. **Şifre Güncelleme** (Ayşe Küçük)
+    - **API Metodu: `PUT /auth/update-password`
+    - **Açıklama:** Sistem, giriş yapmış olan kullanıcıların ve mekan sahiplerinin mevcut şifrelerini doğrulayarak kendi profilleri üzerinden yeni bir şifre belirlemelerini ve şifrelerini güncellemelerini sağlamalıdır.
 
 30. **Favori Mekan Ekleme** (Ayşe Küçük)
     - **API Metodu:** `POST /favorites`
