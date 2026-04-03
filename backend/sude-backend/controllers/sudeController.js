@@ -1,9 +1,9 @@
-const mongoose = require('mongoose');
-const User = require('../../ayse-app/models/User');
-const Venue = require('../../ayse-app/models/Venue');
-const Rating = require('../../ayse-app/models/Rating');
-const Post = require('../../ayse-app/models/Post');
-const FriendRequest = require('../../ayse-app/models/FriendRequest');
+import mongoose from 'mongoose';
+import User from '../../ayse-app/models/User.js';
+import Venue from '../../ayse-app/models/Venue.js';
+import Rating from '../../ayse-app/models/Rating.js';
+import Post from '../../ayse-app/models/Post.js';
+import FriendRequest from '../../ayse-app/models/FriendRequest.js';
 
 function serverError(res, err) {
   if (process.env.NODE_ENV === 'development') {
@@ -13,9 +13,9 @@ function serverError(res, err) {
 }
 
 /**
- * DELETE /admin/venues/:venuesId — yalnızca mekan sahibi (owner) silebilir; transaction
+ * DELETE /admin/venues/:venuesId
  */
-exports.deleteVenue = async (req, res) => {
+export const deleteVenue = async (req, res) => {
   const session = await mongoose.startSession();
   try {
     const { venuesId } = req.params;
@@ -80,9 +80,9 @@ function normalizeVenuePhotos(body) {
 }
 
 /**
- * POST /admin/register — mekan sahibi (role: owner) + mekan
+ * POST /admin/register
  */
-exports.adminRegister = async (req, res) => {
+export const adminRegister = async (req, res) => {
   try {
     const {
       email,
@@ -170,9 +170,9 @@ exports.adminRegister = async (req, res) => {
 };
 
 /**
- * POST /venues/:id/rate — 1–5 puan
+ * POST /venues/:id/rate
  */
-exports.rateVenue = async (req, res) => {
+export const rateVenue = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
@@ -209,7 +209,7 @@ exports.rateVenue = async (req, res) => {
 /**
  * GET /venues/:id/average-rating
  */
-exports.getAverageRating = async (req, res) => {
+export const getAverageRating = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -249,14 +249,14 @@ exports.getAverageRating = async (req, res) => {
 };
 
 /**
- * GET /venues/sort?by=rating — yalnızca by=rating kabul edilir
+ * GET /venues/sort?by=rating
  */
-exports.sortVenuesByRating = async (req, res) => {
+export const sortVenuesByRating = async (req, res) => {
   try {
     const { by } = req.query;
     if (by !== 'rating') {
       return res.status(400).json({
-        message: 'Geçersiz veya eksik parametre: sorgu parametresi by=rating olmalıdır (örn. /venues/sort?by=rating)',
+        message: 'Geçersiz veya eksik parametre: sorgu parametresi by=rating olmalıdır',
       });
     }
 
@@ -301,9 +301,9 @@ exports.sortVenuesByRating = async (req, res) => {
 };
 
 /**
- * DELETE /users/account — kendi hesabını kalıcı sil
+ * DELETE /users/account
  */
-exports.deleteUserAccount = async (req, res) => {
+export const deleteUserAccount = async (req, res) => {
   try {
     const userId = req.user.id;
 
@@ -341,9 +341,9 @@ exports.deleteUserAccount = async (req, res) => {
 };
 
 /**
- * PUT /users/profile — ad, soyad, fotoğraf vb.
+ * PUT /users/profile
  */
-exports.updateUserProfile = async (req, res) => {
+export const updateUserProfile = async (req, res) => {
   try {
     const userId = req.user.id;
     const { firstName, lastName, name, profilePhoto } = req.body;
@@ -387,9 +387,9 @@ exports.updateUserProfile = async (req, res) => {
 };
 
 /**
- * POST /users/posts — metin + görsel URL
+ * POST /users/posts
  */
-exports.createPost = async (req, res) => {
+export const createPost = async (req, res) => {
   try {
     const userId = req.user.id;
     const { text, imageUrl } = req.body;
@@ -417,4 +417,16 @@ exports.createPost = async (req, res) => {
   } catch (err) {
     return serverError(res, err);
   }
+};
+
+
+export default {
+  deleteVenue,
+  adminRegister,
+  rateVenue,
+  getAverageRating,
+  sortVenuesByRating,
+  deleteUserAccount,
+  updateUserProfile,
+  createPost
 };
