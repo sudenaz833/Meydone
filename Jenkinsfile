@@ -11,7 +11,7 @@ pipeline {
 
         stage('Build and Deploy') {
             steps {
-                echo 'Ana dizindeki docker-compose kullanılarak sistem ayağa kaldırılıyor...'
+                echo 'Ana dizindeki docker-compose kullanılarak sistem ayağa kaldırılıyoor...'
                 // Artık dir('backend') kullanmıyoruz çünkü docker-compose.yaml ana dizinde.
                 // JWT_SECRET gibi değişkenleri komut satırından veya Jenkins Credentials içinden verebilirsiniz.
                 sh 'export JWT_SECRET=meydone1 && docker compose down'
