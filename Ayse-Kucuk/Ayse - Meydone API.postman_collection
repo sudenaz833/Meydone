@@ -1,0 +1,298 @@
+{
+	"info": {
+		"_postman_id": "dfb0b25a-1196-430d-996b-66a9a158e811",
+		"name": "Ayşe - Meydone API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "50533941",
+		"_collection_link": "https://ayseekucuk33-4346678.postman.co/workspace/ayse's-Workspace~2e8502b4-7a19-48d7-8e82-28a1e8d8c179/collection/50533941-dfb0b25a-1196-430d-996b-66a9a158e811?action=share&source=collection_link&creator=50533941"
+	},
+	"item": [
+		{
+			"name": "1. Saat Güncelleme",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"hours\": {\r\n    \"monday\": \"08:00-24:00\",\r\n    \"tuesday\": \"08:00-22:00\",\r\n    \"wednesday\": \"08:00-22:00\",\r\n    \"thursday\": \"08:00-22:00\",\r\n    \"friday\": \"08:00-23:00\",\r\n    \"saturday\": \"09:00-22:00\",\r\n    \"sunday\": \"09:00-22:00\"\r\n  }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://meydone-production.up.railway.app/api/admin/venues/69d147f9f593176a0d66c3b8/hours",
+					"protocol": "https",
+					"host": [
+						"meydone-production",
+						"up",
+						"railway",
+						"app"
+					],
+					"path": [
+						"api",
+						"admin",
+						"venues",
+						"69d147f9f593176a0d66c3b8",
+						"hours"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "2.Konum Güncelleme",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"lat\": 37.828,\r\n    \"lng\": 33.520\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://meydone-production.up.railway.app/api/admin/venues/69d147f9f593176a0d66c3b8/location",
+					"protocol": "https",
+					"host": [
+						"meydone-production",
+						"up",
+						"railway",
+						"app"
+					],
+					"path": [
+						"api",
+						"admin",
+						"venues",
+						"69d147f9f593176a0d66c3b8",
+						"location"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "3. Menü Güncelleme",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"menu\": [\r\n    { \"name\": \"Sade Maraş\", \"price\": 33 },\r\n    { \"name\": \"Antep Fıstıklı\", \"price\": 38 },\r\n    { \"name\": \"Belçika Çikolatalı\", \"price\": 55 },\r\n    { \"name\": \"Limonlu Sorbe\", \"price\": 40 }\r\n  ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://meydone-production.up.railway.app/api/admin/venues/69d147f9f593176a0d66c3b8/menu",
+					"protocol": "https",
+					"host": [
+						"meydone-production",
+						"up",
+						"railway",
+						"app"
+					],
+					"path": [
+						"api",
+						"admin",
+						"venues",
+						"69d147f9f593176a0d66c3b8",
+						"menu"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "4. Şifre Güncelleme",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"currentPassword\": \"12345678\",\r\n  \"newPassword\": \"123456789\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://meydone-production.up.railway.app/api/users/69d1550e8ccd6a9027407a475/password",
+					"protocol": "https",
+					"host": [
+						"meydone-production",
+						"up",
+						"railway",
+						"app"
+					],
+					"path": [
+						"api",
+						"users",
+						"69d1550e8ccd6a9027407a475",
+						"password"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "5. Favori Mekan Ekleme",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"venueId\": \"69d118478cafb6b5d370f3a2\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://meydone-production.up.railway.app/api/favorites",
+					"protocol": "https",
+					"host": [
+						"meydone-production",
+						"up",
+						"railway",
+						"app"
+					],
+					"path": [
+						"api",
+						"favorites"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "6. Favori Mekan Silme",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://meydone-production.up.railway.app/api/favorites/69d118478cafb6b5d370f3a2",
+					"protocol": "https",
+					"host": [
+						"meydone-production",
+						"up",
+						"railway",
+						"app"
+					],
+					"path": [
+						"api",
+						"favorites",
+						"69d118478cafb6b5d370f3a2"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "7. Arkadaş Ekleme",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"friendId\": \"69d168108cd6a9027407b558\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://meydone-production.up.railway.app/api/friends/request",
+					"protocol": "https",
+					"host": [
+						"meydone-production",
+						"up",
+						"railway",
+						"app"
+					],
+					"path": [
+						"api",
+						"friends",
+						"request"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "8. Arkadaş İsteği Bildirimi",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://meydone-production.up.railway.app/api/notifications/friend-requests",
+					"protocol": "https",
+					"host": [
+						"meydone-production",
+						"up",
+						"railway",
+						"app"
+					],
+					"path": [
+						"api",
+						"notifications",
+						"friend-requests"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OWQxNTUwZThjZDZhOTAyNzQwN2E0NzUiLCJpYXQiOjE3NzUzMjg4NjcsImV4cCI6MTc3NTkzMzY2N30.m0DT8QpEfUdHzeyF4s4qoPdJOm37TXr_qLkIgetwFTY",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}

@@ -1,0 +1,310 @@
+{
+	"info": {
+		"_postman_id": "a54af464-347b-4cb7-a64c-30c95a43f2a8",
+		"name": "meydoneirem",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "50534618",
+		"_collection_link": "https://birembi-4109707.postman.co/workspace/Irem's-Workspace~db9376fe-22e8-46f3-82bc-fca46d995fcc/collection/50534618-a54af464-347b-4cb7-a64c-30c95a43f2a8?action=share&source=collection_link&creator=50534618"
+	},
+	"item": [
+		{
+			"name": "Arkadaşlık İsteği Onay",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OWQxNTUwZThjZDZhOTAyNzQwN2E0NzUiLCJpYXQiOjE3NzUzNzUxODksImV4cCI6MTc3NTk3OTk4OX0.g9wgEYmywnvHcmaRRSsWPwyEC3lsMBg9pMS10HyVinQ",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"status\": \"accepted\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://meydone-production.up.railway.app/api/friends/accept/69d2346d43862fdaf91883a1",
+					"protocol": "https",
+					"host": [
+						"meydone-production",
+						"up",
+						"railway",
+						"app"
+					],
+					"path": [
+						"api",
+						"friends",
+						"accept",
+						"69d2346d43862fdaf91883a1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Arkadaş Listesinden Silme",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OWQxNWFjZDhjZDZhOTAyNzQwN2E3YmIiLCJpYXQiOjE3NzUzMzQ4MzUsImV4cCI6MTc3NTkzOTYzNX0.1LL3g9hdvmnXH4apyXBUEX-mSiG334ojP6U0jbVrabc",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "https://meydone-production.up.railway.app/api/friends/69d1550e8cd6a9027407a475",
+					"protocol": "https",
+					"host": [
+						"meydone-production",
+						"up",
+						"railway",
+						"app"
+					],
+					"path": [
+						"api",
+						"friends",
+						"69d1550e8cd6a9027407a475"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Arkadaş Listesini Görüntüleme",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OWQxNWFjZDhjZDZhOTAyNzQwN2E3YmIiLCJpYXQiOjE3NzUzMzQ4MzUsImV4cCI6MTc3NTkzOTYzNX0.1LL3g9hdvmnXH4apyXBUEX-mSiG334ojP6U0jbVrabc",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://meydone-production.up.railway.app/api/friends",
+					"protocol": "https",
+					"host": [
+						"meydone-production",
+						"up",
+						"railway",
+						"app"
+					],
+					"path": [
+						"api",
+						"friends"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Yakın Mekanları Listeleme",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OWQxNWFjZDhjZDZhOTAyNzQwN2E3YmIiLCJpYXQiOjE3NzUzMzQ4MzUsImV4cCI6MTc3NTkzOTYzNX0.1LL3g9hdvmnXH4apyXBUEX-mSiG334ojP6U0jbVrabc",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://meydone-production.up.railway.app/api/venues/nearby?lat=37.8285&lng=30.5250&radiusKm=15",
+					"protocol": "https",
+					"host": [
+						"meydone-production",
+						"up",
+						"railway",
+						"app"
+					],
+					"path": [
+						"api",
+						"venues",
+						"nearby"
+					],
+					"query": [
+						{
+							"key": "lat",
+							"value": "37.8285"
+						},
+						{
+							"key": "lng",
+							"value": "30.5250"
+						},
+						{
+							"key": "radiusKm",
+							"value": "15"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Gizlilik Ayarlarını Güncelleme",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OWQxNWFjZDhjZDZhOTAyNzQwN2E3YmIiLCJpYXQiOjE3NzUzMzQ4MzUsImV4cCI6MTc3NTkzOTYzNX0.1LL3g9hdvmnXH4apyXBUEX-mSiG334ojP6U0jbVrabc",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"locationVisibility\": \"friends\",\n    \"postVisibility\": \"private\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://meydone-production.up.railway.app/api/users/privacy",
+					"protocol": "https",
+					"host": [
+						"meydone-production",
+						"up",
+						"railway",
+						"app"
+					],
+					"path": [
+						"api",
+						"users",
+						"privacy"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Mekana Fotoğraf Yükleme",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OWQxNjAxZThjZDZhOTAyNzQwN2E5YjMiLCJpYXQiOjE3NzUzMzg2MjgsImV4cCI6MTc3NTk0MzQyOH0.iYYIN3WiO3mSXpZVAwvnh7unGkHO5jElI4bxUxNfvEM",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "postman-cloud:///1f1306f4-de14-4cb0-bb94-c128e7708976"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://meydone-production.up.railway.app/api/admin/venues/69d1601f8cd6a9027407a9b5/photo",
+					"protocol": "https",
+					"host": [
+						"meydone-production",
+						"up",
+						"railway",
+						"app"
+					],
+					"path": [
+						"api",
+						"admin",
+						"venues",
+						"69d1601f8cd6a9027407a9b5",
+						"photo"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Mekanları Haritada Listeleme",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://meydone-production.up.railway.app/api/venues/map",
+					"protocol": "https",
+					"host": [
+						"meydone-production",
+						"up",
+						"railway",
+						"app"
+					],
+					"path": [
+						"api",
+						"venues",
+						"map"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Yorum Beğenme",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OWQxNTUwZThjZDZhOTAyNzQwN2E0NzUiLCJpYXQiOjE3NzUzNzUxODksImV4cCI6MTc3NTk3OTk4OX0.g9wgEYmywnvHcmaRRSsWPwyEC3lsMBg9pMS10HyVinQ",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "https://meydone-production.up.railway.app/api/comments/69d218908cc054302cc08d40/like",
+					"protocol": "https",
+					"host": [
+						"meydone-production",
+						"up",
+						"railway",
+						"app"
+					],
+					"path": [
+						"api",
+						"comments",
+						"69d218908cc054302cc08d40",
+						"like"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

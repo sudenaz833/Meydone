@@ -1,0 +1,53 @@
+services:
+  # 1. MongoDB Kapsayıcısı (Slayta tam uyumlu)
+  mongodb_kapsayici:
+    image: mongo:7
+    container_name: mongodb_kapsayici
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - meydone_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. REST API Kapsayıcısı (Slayta tam uyumlu)
+  meydone_api_kapsayici:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: meydone_api_kapsayici
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    environment:
+      - PORT=9000
+      - NODE_ENV=development
+      # Slayttaki kural: mongodb://mongodbservisadi:port/veritabaniadi
+      - MONGODB_URI=mongodb://mongodb_kapsayici:27017/meydone
+      - JWT_SECRET=meydone1
+    depends_on:
+      mongodb_kapsayici:
+        condition: service_healthy
+
+  # 3. Front-End Kapsayıcısı (Slayta tam uyumlu)
+  meydone_frontend_kapsayici:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: meydone_frontend_kapsayici
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Slayttaki kural: http://servisadi:port
+      # Docker ağı içinde localhost yerine servis adını (meydone_api_kapsayici) kullanmalısın
+      - VITE_API_URL=http://meydone_frontend_kapsayici:9000/api/
+    depends_on:
+      - meydone_api_kapsayici
+
+volumes:
+  meydone_data:
