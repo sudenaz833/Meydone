@@ -1,38 +1,39 @@
 import 'dotenv/config';
-import express from 'express'; // Express'i import et (CORS eklemek için gerekebilir)
-import cors from 'cors'; // Yeni yüklediğin paketi import et
+import express from 'express'; 
+import cors from 'cors'; 
 import app from './src/app.js';
 import { connectDB } from './src/config/db.js';
 import { env } from './src/config/env.js';
 import { ensureSampleData } from './src/seed/ensureSampleData.js';
 
-// --- CORS AYARI BURAYA GELİYOR ---
-// Eğer src/app.js içinde halihazırda cors() eklemediysen buraya ekle:
+// --- KRİTİK AYARLAR ---
+// Hem localhost hem de mobil cihazlardan gelen isteklere izin veriyoruz.
 app.use(cors({
-  origin: "http://localhost:3000", // Frontend adresin
+  origin: true, // Dinamik olarak tüm kaynaklara izin verir, kafa karışıklığını önler.
   credentials: true
 }));
-// --------------------------------
 
 const start = async () => {
   try {
     await connectDB();
     await ensureSampleData();
     
-    // Docker konteyneri dışından erişim için 0.0.0.0 şarttır.
-    const host = process.env.HOST ?? '0.0.0.0'; 
+    // 0.0.0.0: Sunucunun sadece PC içine değil, dış dünyaya (iPhone'a) yayın yapmasını sağlar.
+    const host = '0.0.0.0'; 
     
-    const server = app.listen(env.port, host, () => {
-      console.log(`\n🚀 Sunucu Hazır!`);
-      console.log(`📡 API: http://localhost:${env.port}/api/health`);
+    // Terminalde 9000 gördüğünü söylediğin için burayı sabitliyoruz.
+    const port = 9000;
+
+    const server = app.listen(port, host, () => {
+      console.log(`\n🚀 Meydone Backend Yayında!`);
+      console.log(`📡 Bilgisayar için: http://localhost:${port}/api/health`);
+      console.log(`📱 iPhone için: http://192.168.1.42:${port}/api/health`);
       console.log(`🌍 Mod: ${env.nodeEnv}\n`);
     });
 
     server.on('error', (err) => {
       if (err.code === 'EADDRINUSE') {
-        console.error(
-          `\nPort ${env.port} kullanımda. Başka bir port deneyin.\n`,
-        );
+        console.error(`\nPort ${port} zaten kullanımda. Başka bir port deneyin.\n`);
         process.exit(1);
       }
     });

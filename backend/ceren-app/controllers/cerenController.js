@@ -5,6 +5,7 @@ const Venue = require('../../ayse-app/models/Venue');
 const Comment = require('../../ayse-app/models/Comment');
 
 function serverError(res, err) {
+  console.error("❌ BACKEND HATASI:", err);
   if (process.env.NODE_ENV === 'development') {
     return res.status(500).json({ message: 'Sunucu hatası', error: err.message });
   }

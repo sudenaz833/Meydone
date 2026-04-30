@@ -14,11 +14,12 @@ v1Router.use('/', routes);
 app.use(helmet());
 app.use(
   cors({
-    origin: ['http://localhost:3000',
-       'http://127.0.0.1:5173',
-       'https://meydone.vercel.app',
-        /\.vercel\.app$/
-      ],
+   //origin: ['http://localhost:3000',
+       //'http://127.0.0.1:5173',
+       //'https://meydone.vercel.app',
+        ///\.vercel\.app$/
+      //],
+    origin: true, // sonradan eklendi Her yerden gelen isteğe izin ver (iPhone, Vercel, Railway)
     credentials: true,
   }),
 );

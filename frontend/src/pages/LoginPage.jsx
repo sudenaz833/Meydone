@@ -4,6 +4,7 @@ import FloatingField from "../components/FloatingField";
 import api from "../services/api";
 import { AUTH_TOKEN_KEY } from "../utils/constants";
 import { appRoutes } from "../utils/routes";
+import { IoChevronBack } from 'react-icons/io5'; // 1. İkonu ekledik
 import {
   alertError,
   authBtnPrimary,
@@ -103,9 +104,18 @@ export default function LoginPage() {
   }
 
   return (
-    <div className={authPageWrap}>
+    <div className={`${authPageWrap} relative`}> {/* relative ekledik ki buton buraya göre hizalansın */}
       <div className={authPageWash} aria-hidden />
       <div className={authPageGlow} aria-hidden />
+
+      {/* 2. GERİ TUŞU: Ekranın sol üstüne şık bir buton */}
+      <button 
+        onClick={() => navigate(appRoutes.home)} 
+        className="absolute top-6 left-6 p-2 rounded-full bg-white/20 hover:bg-white/40 active:scale-95 transition-all z-20 text-slate-700"
+        title="Geri Dön"
+      >
+        <IoChevronBack size={28} />
+      </button>
 
       <section className={authCard}>
         <h1 className={authHeading}>Tekrar hoş geldiniz</h1>

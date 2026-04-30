@@ -4,12 +4,47 @@
 
 html {
   color-scheme: light;
+  /* Sayfanın gereksiz yere aşağı yukarı zıplamasını (bounce) engeller */
+  overscroll-behavior-y: none;
 }
 
 body {
+  /* iPhone çentiği ve alt çizgi alanı için güvenli alan kullanımı */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
   @apply min-h-screen antialiased text-stone-800;
-}
-.leaflet-container {
-  font-family: inherit;
+  /* Mobilde metin seçmeyi engelleyerek daha çok "App" hissi verir */
+  -webkit-user-select: none;
+  /* Tıklamalardaki mavi gölgeyi kaldırır */
+  -webkit-tap-highlight-color: transparent;
 }
 
+.leaflet-container {
+  font-family: inherit;
+  /* Harita üzerinde parmak hareketlerini daha akıcı yapar */
+  touch-action: pan-x pan-y;
+}
+
+/* --- MOBİL ÖZEL EKLEMELER --- */
+
+/* Mekan kartlarını kaydırırken çıkan çirkin çubuğu gizler */
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Mobilde kaydırma hareketini daha ivmeli ve doğal yapar */
+.flex.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Inputlarda yazı yazılabilsin diye seçmeyi tekrar aktif ediyoruz */
+input, textarea {
+  -webkit-user-select: text;
+}

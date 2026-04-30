@@ -2,7 +2,7 @@ FROM node:20-alpine
 WORKDIR /backend
 # Bağımlılıkları kopyala ve yükle
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 # Tüm kodu kopyala
 COPY . .
 # Slayttaki gibi portu 9000 yapıyoruz

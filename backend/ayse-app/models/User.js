@@ -45,4 +45,5 @@ userSchema.statics.hashPassword = async function hashPassword(plain) {
   return bcrypt.hash(plain, SALT_ROUNDS);
 };
 
-module.exports = mongoose.model('User', userSchema);
+// Eğer model zaten tanımlıysa onu kullan, yoksa yeni oluştur (Çakışmayı önler)
+module.exports = mongoose.models.User || mongoose.model('User', userSchema);
