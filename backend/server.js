@@ -7,27 +7,27 @@ import { env } from './src/config/env.js';
 import { ensureSampleData } from './src/seed/ensureSampleData.js';
 
 // --- KRİTİK AYARLAR ---
-// Hem localhost hem de mobil cihazlardan gelen isteklere izin veriyoruz.
-app.use(cors({
-  origin: true, // Dinamik olarak tüm kaynaklara izin verir, kafa karışıklığını önler.
-  credentials: true
-}));
+//// Hem localhost hem de mobil cihazlardan gelen isteklere izin veriyoruz.
+//app.use(cors({
+  //origin: true, // Dinamik olarak tüm kaynaklara izin verir, kafa karışıklığını önler.
+  //credentials: true
+//}));
 
 const start = async () => {
   try {
     await connectDB();
     await ensureSampleData();
     
+
+    // Terminalde 9000 gördüğünü söylediğin için burayı sabitliyoruz.
+    const port = process.env.PORT || 9000; 
+
     // 0.0.0.0: Sunucunun sadece PC içine değil, dış dünyaya (iPhone'a) yayın yapmasını sağlar.
     const host = '0.0.0.0'; 
     
-    // Terminalde 9000 gördüğünü söylediğin için burayı sabitliyoruz.
-    const port = 9000;
-
-    const server = app.listen(port, host, () => {
+  const server = app.listen(port, host, () => {
       console.log(`\n🚀 Meydone Backend Yayında!`);
-      console.log(`📡 Bilgisayar için: http://localhost:${port}/api/health`);
-      console.log(`📱 iPhone için: http://192.168.1.42:${port}/api/health`);
+      console.log(`📡 Dinamik Port: ${port}`);
       console.log(`🌍 Mod: ${env.nodeEnv}\n`);
     });
 
