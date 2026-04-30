@@ -6,12 +6,7 @@ import { connectDB } from './src/config/db.js';
 import { env } from './src/config/env.js';
 import { ensureSampleData } from './src/seed/ensureSampleData.js';
 
-// --- KRİTİK AYARLAR ---
-//// Hem localhost hem de mobil cihazlardan gelen isteklere izin veriyoruz.
-//app.use(cors({
-  //origin: true, // Dinamik olarak tüm kaynaklara izin verir, kafa karışıklığını önler.
-  //credentials: true
-//}));
+
 
 const start = async () => {
   try {

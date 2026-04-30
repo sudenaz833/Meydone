@@ -5,31 +5,20 @@ import { API_BASE_URL, AUTH_TOKEN_KEY } from '../utils/constants';
 // ... diğer importlar aynı kalsın
 
 const getBaseURL = () => {
-  // 1. Önce ortam değişkenlerine bak (Vercel ve build işlemleri için en sağlıklısı bu)
-  //if (import.meta.env.VITE_API_TARGET) {
-    //return `${import.meta.env.VITE_API_TARGET}/api`;
+  
+  
+  //let baseURL = import.meta.env.VITE_API_TARGET || "https://meydone-production.up.railway.app/api";
+  //if (baseURL.endsWith('/')) {
+   // baseURL = baseURL.slice(0, -1);
   //}
-
-  // 2. Eğer .env yoksa tarayıcı adresine bak (Lokal geliştirme için)
-  //if (typeof window !== 'undefined') {
-    //if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      //return "http://localhost:9000/api";
-    //}
-  //}
-
-  // 3. iPhone ve Vercel için "Kurtarıcı" adres (Buraya Kendi Railway Linkini Yaz!)
-  // DİKKAT: Buraya dün geceki 192.168... yerine Railway adresini yapıştır.
-
-  // Değişkeni al ve sağındaki-solundaki boşlukları/slashları temizle
-  let baseURL = import.meta.env.VITE_API_TARGET || "https://meydone-production.up.railway.app/api";
-
-  // Eğer adresin sonunda slash varsa onu uçur (garantiye alalım)
-  if (baseURL.endsWith('/')) {
-    baseURL = baseURL.slice(0, -1);
+  //return baseURL; 
+  if (typeof window !== 'undefined' && 
+     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return "http://localhost:9000/api"; 
   }
 
-  // Şimdi gönül rahatlığıyla sadece tek bir slash ile rotaları ekleyebiliriz
-  return baseURL; 
+  // 2. Eğer Vercel veya iPhone üzerinden açıyorsan (Canlı test için)
+  return "https://meydone-production.up.railway.app/api";
 };
 
 
