@@ -5,13 +5,7 @@ import { API_BASE_URL, AUTH_TOKEN_KEY } from '../utils/constants';
 // ... diğer importlar aynı kalsın
 
 const getBaseURL = () => {
-  
-  
-  //let baseURL = import.meta.env.VITE_API_TARGET || "https://meydone-production.up.railway.app/api";
-  //if (baseURL.endsWith('/')) {
-   // baseURL = baseURL.slice(0, -1);
-  //}
-  //return baseURL; 
+   
   if (typeof window !== 'undefined' && 
      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
     return "http://localhost:9000/api"; 

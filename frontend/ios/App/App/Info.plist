@@ -4,6 +4,10 @@
 <dict>
 	<key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Size en yakın mekanları listelemek için konumunuza ihtiyacımız var.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Harita üzerinde konumunuzu anlık görebilmeniz için bu izni istiyoruz.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
