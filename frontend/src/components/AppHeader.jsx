@@ -175,7 +175,8 @@ export default function AppHeader() {
               placeholder="Mekan veya menü ara..."
               value={searchDraft}
               onChange={(e) => setSearchDraft(e.target.value)}
-              className="w-full bg-slate-100 border-none rounded-xl py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
+              // text-slate-900 eklenerek yazı rengi görünür hale getirildi
+              className="w-full bg-slate-100 text-slate-900 border-none rounded-xl py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
             />
           </div>
           
