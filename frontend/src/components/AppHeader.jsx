@@ -17,66 +17,62 @@ export default function AppHeader() {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchDraft, setSearchDraft] = useState(searchParams.get("q") ?? "");
+  
+  // Bildirimin okunup okunmadığını kontrol eden state
   const [hasUnread, setHasUnread] = useState(false);
 
   const hideBackButton = ['/', '/login', '/register'].includes(location.pathname);
 
-  // 1. Backend Veri Yapısıyla Birebir Eşleşen Bildirim Çekme Fonksiyonu
+  // 1. Bildirimleri Çekme Fonksiyonu
   const fetchLikeNotifications = useCallback(async () => {
     if (!loggedIn) return;
     try {
       const response = await api.get("/notifications/comment-likes");
-      
-      // Backend'den gelen veri response.data.data.items içindeymiş, orayı tam yakalıyoruz
       const rawItems = response.data?.data?.items || [];
       
       const formattedNotifications = rawItems.map(item => {
-        // Backend'den gelen "likers" dizisindeki ilk kişinin kullanıcı adını alıyoruz
         const firstLiker = item.likers && item.likers[0];
         const username = firstLiker?.username || firstLiker?.name || "Bir kullanıcı";
-
-        // Backend bize yorumun metnini tam olarak "commentPreview" ismiyle veriyor
         const commentText = item.commentPreview || "senin";
 
         return {
           id: item.commentId || Math.random().toString(),
           senderName: username,
-          // Örn: "sudeee "çok iyi" yorumunu beğendi." formatını üretiyoruz
           text: `"${commentText}" yorumunu beğendi.`, 
           createdAt: item.updatedAt || new Date()
         };
       });
 
-      // Tarihe göre sırala
       formattedNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      setNotifications(formattedNotifications);
       
-      // Eğer listede bildirim varsa sayacı aktif et
-      if (formattedNotifications.length > 0) {
+      // Eğer yeni gelen bildirim sayısı, şu anki listeden farklıysa yeni bildirim var demektir
+      if (formattedNotifications.length > notifications.length && !showNotifications) {
         setHasUnread(true);
       }
+      
+      setNotifications(formattedNotifications);
     } catch (err) {
       console.error("Yorum beğenileri çekilirken hata oluştu:", err);
     }
-  }, [loggedIn]);
+  }, [loggedIn, notifications.length, showNotifications]);
 
   // 2. 5 Saniyede Bir Polling Yapısı
   useEffect(() => {
     if (loggedIn) {
       fetchLikeNotifications();
       const interval = setInterval(() => {
-        if (!showNotifications) {
-          fetchLikeNotifications();
-        }
+        fetchLikeNotifications();
       }, 5000); 
       return () => clearInterval(interval);
     }
-  }, [loggedIn, fetchLikeNotifications, showNotifications]);
+  }, [loggedIn, fetchLikeNotifications]);
 
-  // 3. Çan Simgesine Tıklanınca Kırmızı Sayacı Sıfırlama
+  // 3. ÇAN SİMGESİNE TIKLANDIĞINDA ÇALIŞAN FONKSİYON
   const handleNotifClick = () => {
     const nextShowState = !showNotifications;
     setShowNotifications(nextShowState);
+    
+    // Çan kutusu açıldığı an kırmızı bildirim balonunu söndür/kaldır
     if (nextShowState) {
       setHasUnread(false);
     }
@@ -124,7 +120,7 @@ export default function AppHeader() {
               >
                 <IoNotificationsOutline size={26} />
                 
-                {/* YENİ BİLDİRİM BALONU */}
+                {/* Sadece okunmamış bildirim varsa ve hasUnread true ise kırmızı balon görünür */}
                 {hasUnread && notifications.length > 0 && (
                   <span className="absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white ring-2 ring-white shadow-sm animate-pulse">
                     {notifications.length}
@@ -148,7 +144,6 @@ export default function AppHeader() {
                     <ul className="divide-y divide-slate-50">
                       {notifications.map((notif) => (
                         <li key={notif.id} className="px-4 py-3 hover:bg-slate-50 transition flex flex-col gap-0.5">
-                          {/* TAM İSTEDİĞİN ÇIKTI: @sudeee "çok iyi" yorumunu beğendi. */}
                           <div className="text-xs text-slate-700 leading-relaxed">
                             <span className="font-bold text-slate-900">@{notif.senderName}</span> {notif.text}
                           </div>
