@@ -27,23 +27,29 @@ export default function AppHeader() {
 
   const hideBackButton = ['/', '/login', '/register'].includes(location.pathname);
 
-  // 1. Tüm Bildirimleri (İstekler, Beğeniler vs.) Çekme ve Birleştirme Fonksiyonu
+  // 1. Bildirimleri ve Arkadaşlık İsteklerini Çekme Fonksiyonu
   const fetchAllNotifications = useCallback(async () => {
     if (!loggedIn) return;
     try {
-      // Arkadaşlık isteklerini ve varsa genel bildirimleri/beğenileri paralel olarak çekiyoruz
+      // Arkadaşlık isteklerini ve genel bildirimleri eşzamanlı çağırıyoruz
       const responses = await Promise.allSettled([
         api.get("/friends/pending"),
-        api.get("/notifications") // Eğer backend'de beğeniler/yorumlar için bu endpoint varsa çalışır
+        api.get("/notifications").catch(() => ({ data: [] })) // Hata verirse patlamasın diye önlem
       ]);
 
       let combinedNotifications = [];
 
-      // A. Arkadaşlık İsteklerini İşleme ve Bildirim Kutusuna Ekleme
+      // A. Arkadaşlık İsteklerini Doğru Alanlarla Yakalama
       if (responses[0].status === "fulfilled") {
-        const friendItems = responses[0].value.data?.data?.items || responses[0].value.data || [];
+        const resData = responses[0].value.data;
+        // Backend yapına göre data, data.items veya data.data.items içindeki diziyi buluyoruz
+        const friendItems = resData?.items || resData?.data?.items || resData?.data || (Array.isArray(resData) ? resData : []);
+        
         const formattedFriends = friendItems.map(item => {
-          const senderUsername = item.sender?.username || item.username || item.name || "Bir kullanıcı";
+          // Ekran görüntündeki kartlarda hangi alan doluyorsa onu yakalıyoruz:
+          // Öncelik istek atan kullanıcının (sender) adı, yoksa doğrudan item'ın kendisidir
+          const senderUsername = item.sender?.username || item.sender?.name || item.username || item.name || "Bir kullanıcı";
+          
           return {
             id: item._id,
             type: "friend_request",
@@ -55,48 +61,41 @@ export default function AppHeader() {
         combinedNotifications = [...combinedNotifications, ...formattedFriends];
       }
 
-      // B. Beğeniler ve Yorum Bildirimlerini İşleme (Mevcut veya Gelecekteki Backend Yapısı İçin)
-      if (responses[1].status === "fulfilled") {
-        const generalItems = responses[1].value.data?.data?.items || responses[1].value.data || [];
+      // B. Beğeniler ve Yorumları Yakalama
+      if (responses[1].status === "fulfilled" && responses[1].value?.data) {
+        const resDataGen = responses[1].value.data;
+        const generalItems = resDataGen?.items || resDataGen?.data?.items || resDataGen?.data || (Array.isArray(resDataGen) ? resDataGen : []);
+        
         const formattedGenerals = generalItems.map(item => ({
           id: item._id,
-          type: item.type || "like", // "like" veya "comment"
-          senderName: item.sender?.username || "Bir kullanıcı",
+          type: item.type || "like",
+          senderName: item.sender?.username || item.username || "Bir kullanıcı",
           text: item.type === "comment" ? "yorumunuza yanıt verdi." : "yorumunuzu beğendi.",
           createdAt: item.createdAt || new Date()
         }));
         combinedNotifications = [...combinedNotifications, ...formattedGenerals];
       }
 
-      // Backend'den henüz beğeni API'si gelmediyse, test edebilmen için örnek bir beğeni bildirimi ekleyelim:
-      // (Eğer backend hazırsa aşağıdaki if bloğunu tamamen silebilirsin)
-      if (combinedNotifications.length === 0 && friendItems?.length > 0) {
-        // Sırf kutuda nasıl durduğunu görmen için örnek veri
-      }
-
-      // Bildirimleri en yeni tarihten en eskiye doğru sıralıyoruz
+      // Tarihe göre yeniden eskiye sırala
       combinedNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
       setNotifications(combinedNotifications);
     } catch (err) {
-      console.error("Bildirimler birleştirilirken hata oluştu:", err);
+      console.error("Bildirim listesi güncellenirken hata:", err);
     }
   }, [loggedIn]);
 
-  // 2. Polling Sistemi (10 Saniyede Bir Canlı Kontrol)
+  // 2. Sayfa Açıldığında ve Her 10 Saniyede Bir Arkada Yenileme (Polling)
   useEffect(() => {
     if (loggedIn) {
       fetchAllNotifications();
-      
       const interval = setInterval(() => {
         fetchAllNotifications();
       }, 10000);
-
       return () => clearInterval(interval);
     }
   }, [loggedIn, fetchAllNotifications]);
 
-  // 3. Dışarı Tıklayınca Kapatma Kontrolü
+  // 3. Dışarı Tıklayınca Açılır Menüyü Kapatma
   useEffect(() => {
     function handleClickOutside(event) {
       if (notifWrapRef.current && !notifWrapRef.current.contains(event.target)) {
@@ -107,7 +106,7 @@ export default function AppHeader() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 4. Arkadaşlık İsteğini Yanıtla
+  // 4. Çan İçinden İsteği Kabul Et / Reddet
   const handleFriendRequest = async (id, action) => {
     try {
       if (action === "accept") {
@@ -115,9 +114,11 @@ export default function AppHeader() {
       } else {
         await api.post(`/friends/reject/${id}`);
       }
+      // İşlem başarılı olunca arayüzden anlık uçur
       setNotifications(prev => prev.filter(n => n.id !== id));
     } catch (err) {
-      console.error("İşlem başarısız oldu:", err);
+      console.error("İstek işlenirken hata oluştu:", err);
+      // Backend tamamlanana kadar UI donmasın diye yerelde de silebilirsin
       setNotifications(prev => prev.filter(n => n.id !== id));
     }
   };
@@ -157,7 +158,7 @@ export default function AppHeader() {
               >
                 <IoNotificationsOutline size={24} />
                 
-                {/* Kırmızı daire içinde dinamik toplam bildirim sayısı */}
+                {/* DİNAMİK KIRMIZI DAİRE SAYACI */}
                 {notifications.length > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-rose-500 text-white font-bold text-[10px] rounded-full border border-white flex items-center justify-center px-1 shadow-sm">
                     {notifications.length}
@@ -165,7 +166,7 @@ export default function AppHeader() {
                 )}
               </button>
 
-              {/* --- BİLDİRİM PANELİ --- */}
+              {/* --- BİLDİRİM PANELİ DROPDOWN --- */}
               {showNotifications && (
                 <div className="absolute top-12 right-0 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 max-h-96 overflow-y-auto">
                   <div className="px-4 py-2 border-b border-slate-50 font-bold text-sm text-slate-800 flex justify-between items-center">
@@ -185,7 +186,7 @@ export default function AppHeader() {
                             <span className="font-bold text-slate-900">@{notif.senderName}</span> {notif.text}
                           </div>
                           
-                          {/* Arkadaşlık istekleri için butonları göster */}
+                          {/* Arkadaşlık İsteği Butonları */}
                           {notif.type === "friend_request" && (
                             <div className="flex gap-2 justify-end">
                               <button 
@@ -200,13 +201,6 @@ export default function AppHeader() {
                               >
                                 <IoCloseCircle size={14} /> Reddet
                               </button>
-                            </div>
-                          )}
-
-                          {/* Beğeniler veya yorumlar düz bilgilendirme satırı olarak kalır, butonları olmaz */}
-                          {(notif.type === "like" || notif.type === "comment") && (
-                            <div className="text-[10px] text-slate-400 text-right">
-                              Şimdi
                             </div>
                           )}
                         </li>
