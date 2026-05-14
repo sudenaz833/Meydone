@@ -66,14 +66,14 @@ export default function AppHeader() {
     }
   }, [searchParams, loggedIn, searchDraft]);
 
-  // --- CEREN'İN İSTEDİĞİ BİRLEŞTİRİLMİŞ BİLDİRİM ÇEKME MANTIĞI ---
+  // --- CEREN'İN NOKTA ATIŞI DOĞRULANMIŞ BİLDİRİM ÇEKME MANTIĞI ---
   const fetchAllNotifications = useCallback(async () => {
     if (!loggedIn) return;
     try {
-      // Hem yorum beğenilerini hem de arkadaşlık isteklerini paralel olarak çekiyoruz
-      const [likesResponse, friendsResponse] = await Promise.all([
+      // FriendsPage'deki birebir aynı endpoint'leri çağırıyoruz artık!
+      const [likesResponse, friendsPendingResponse] = await Promise.all([
         api.get("/notifications/comment-likes").catch(() => null),
-        api.get("/friends/requests").catch(() => null) // Arkadaşlık istekleri endpoint'i
+        api.get("/friends/pending").catch(() => null) 
       ]);
 
       const allCombined = [];
@@ -97,40 +97,43 @@ export default function AppHeader() {
         });
       }
 
-      // 2. Arkadaşlık İstekleri Bildirimlerini İşle
-      const rawFriends = friendsResponse?.data?.data?.items || friendsResponse?.data?.items || [];
-      if (Array.isArray(rawFriends)) {
-        rawFriends.forEach(item => {
+      // 2. Gelen Arkadaşlık İsteklerini İşle (Tam Doğru Yapı)
+      // FriendsPage'deki gibi data.data.incoming dizisini okuyoruz
+      const incomingRequests = friendsPendingResponse?.data?.data?.incoming || [];
+      if (Array.isArray(incomingRequests)) {
+        incomingRequests.forEach(item => {
           if (!item) return;
-          // Gönderen kişinin adı backend yapısına göre sender veya user içinde olabilir, korumaya alıyoruz
-          const senderInfo = item.sender || item.user || item;
-          const username = senderInfo?.username || senderInfo?.name || "Bir kullanıcı";
+          
+          // FriendsPage'deki gibi gönderen kişi 'from' objesi içinde yer alıyor
+          const fromUser = item.from;
+          const username = fromUser?.name || fromUser?.username || "Bir kullanıcı";
 
           allCombined.push({
-            id: `friend-${item._id || item.id || Math.random()}`,
+            id: `friend-${item._id || Math.random()}`,
             senderName: username,
             text: `sana arkadaşlık isteği gönderdi.`,
             icon: "👥",
-            createdAt: item.createdAt || new Date()
+            // Eğer objede özel bir tarih yoksa güvenli bir yedek tarih veriyoruz
+            createdAt: item.createdAt || item.updatedAt || new Date()
           });
         });
       }
 
-      // Tüm bildirimleri tarihlerine göre en yeni en üstte olacak şekilde sırala
+      // Tüm bildirimleri zamana göre en yeni en üstte olacak şekilde sırala
       allCombined.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       
-      // Eğer yeni bir bildirim geldiyse ve çan kapalıysa kırmızı unread balonunu yak
+      // Yeni bildirim kontrolü ve unread balonu
       if (allCombined.length > notifications.length && !showNotifications) {
         setHasUnread(true);
       }
       
       setNotifications(allCombined);
     } catch (err) {
-      console.error("Bildirimler birleştirilirken hata oluştu:", err);
+      console.error("Bildirimler birleştirilirken hata:", err);
     }
   }, [loggedIn, notifications.length, showNotifications]);
 
-  // Polling Yapısı: Her 5 saniyede bir iki bildirimi de canlı canlı kontrol eder
+  // Her 5 saniyede bir bildirimleri otomatik tazeler
   useEffect(() => {
     if (loggedIn) {
       fetchAllNotifications();
@@ -290,7 +293,6 @@ export default function AppHeader() {
                       {notifications.map((notif) => (
                         <li key={notif.id} className="px-4 py-3 hover:bg-slate-50 transition flex flex-col gap-0.5">
                           <div className="text-xs text-slate-700 leading-relaxed">
-                            {/* Ceren Bak: İkon ekledik, ❤️ beğeni için, 👥 arkadaşlık için çıkacak */}
                             <span className="mr-1.5">{notif.icon}</span>
                             <span className="font-bold text-slate-900">@{notif.senderName}</span> {notif.text}
                           </div>
