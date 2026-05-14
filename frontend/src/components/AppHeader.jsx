@@ -25,9 +25,20 @@ export default function AppHeader() {
 
   const hideBackButton = ['/', '/login', '/register'].includes(location.pathname);
 
-  // 1. Canlı Arama İstek Yönetimi
+  // 1. Canlı Arama İstek Yönetimi ve Arka Plan Sayfayı Canlı Güncelleme
   useEffect(() => {
     const query = searchDraft.trim();
+    
+    // --- CEREN'İN İSTEDİĞİ CANLI ARKA PLAN GÜNCELLEMESİ ---
+    // Eğer kullanıcı mekanlar listeleme sayfasındaysa, Enter beklemeden URL'i canlı güncelliyoruz
+    if (location.pathname === appRoutes.venues) {
+      if (query) {
+        navigate({ pathname: appRoutes.venues, search: `?q=${encodeURIComponent(query)}` }, { replace: true });
+      } else {
+        navigate({ pathname: appRoutes.venues, search: "" }, { replace: true });
+      }
+    }
+
     if (!query) {
       setSuggestedVenues([]);
       return;
@@ -45,7 +56,15 @@ export default function AppHeader() {
     }, 250);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchDraft]);
+  }, [searchDraft, location.pathname, navigate]);
+
+  // Sayfaya dışarıdan url ile q parametresi gelirse kutunun içini doldur
+  useEffect(() => {
+    const qParam = searchParams.get("q") ?? "";
+    if (qParam && searchDraft !== qParam) {
+      setSearchDraft(qParam);
+    }
+  }, [searchParams]);
 
   // 2. Bildirim Çekme Fonksiyonu
   const fetchLikeNotifications = useCallback(async () => {
@@ -118,7 +137,7 @@ export default function AppHeader() {
     setShowSuggestions(false);
   };
 
-  // --- 1. KURAL: SAF BAŞLANGIÇ KONTROLÜ (Mekan ve Kategori için) ---
+  // 1. KURAL: SAF BAŞLANGIÇ KONTROLÜ (Mekan ve Kategori için)
   const checkStrictStartsWith = (sourceText, queryText) => {
     const source = String(sourceText || "").trim().toLowerCase();
     const query = String(queryText || "").trim().toLowerCase();
@@ -126,15 +145,13 @@ export default function AppHeader() {
     return source.startsWith(query);
   };
 
-  // --- 2. KURAL: KELİME BAŞLANGICI KONTROLÜ (Menü öğeleri için) ---
+  // 2. KURAL: KELİME BAŞLANGICI KONTROLÜ (Menü öğeleri için)
   const checkWordStartsWith = (sourceText, queryText) => {
     const source = String(sourceText || "").trim().toLowerCase();
     const query = String(queryText || "").trim().toLowerCase();
     if (!source || !query) return false;
 
-    // Kelimelere bölüyoruz (Örn: "patlıcan", "kebabı")
     const words = source.split(/\s+/);
-    // İçindeki kelimelerden herhangi biri "kebap" ile başlıyor mu?
     return words.some(word => word.startsWith(query));
   };
 
@@ -157,17 +174,14 @@ export default function AppHeader() {
       let isMatched = false;
       let tagText = turkishCatLabel;
 
-      // Mekan Adı Kontrolü: Saf başlangıç ("kö" yazınca "Karaköy" elenir)
       if (checkStrictStartsWith(venueName, query)) {
         isMatched = true;
         tagText = turkishCatLabel;
       } 
-      // Kategori Kontrolü: Saf başlangıç
       else if (checkStrictStartsWith(venueCategory, query) || checkStrictStartsWith(turkishCatLabel, query)) {
         isMatched = true;
         tagText = turkishCatLabel;
       }
-      // Menü Öğeleri Kontrolü: Kelime bazlı başlangıç ("kebap" yazınca "Patlıcan Kebabı" gelir!)
       else if (venue.menu && Array.isArray(venue.menu)) {
         for (let i = 0; i < venue.menu.length; i++) {
           const item = venue.menu[i];
@@ -313,7 +327,7 @@ export default function AppHeader() {
             {/* Akıllı Etiketli Mekanlar */}
             {processedSuggestions.length === 0 && matchedCategories.length === 0 ? (
               <div className="px-3 py-4 text-center text-xs text-slate-400">
-                "{searchDraft}" ile uyuşan bir mekan veya menü bulunamadı.
+                "{searchDraft}" ile başlayan bir mekan veya menü bulunamadı.
               </div>
             ) : (
               <div className="flex flex-col gap-0.5">
