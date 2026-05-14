@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../services/api";
-import { SEARCH_CATEGORY_OPTIONS } from "../utils/category";
+import { SEARCH_CATEGORY_OPTIONS, toTurkishCategory } from "../utils/category";
 import { AUTH_TOKEN_KEY } from "../utils/constants";
 import { appRoutes } from "../utils/routes";
 import { IoChevronBack, IoNotificationsOutline, IoSearchOutline } from 'react-icons/io5';
@@ -124,18 +124,23 @@ export default function AppHeader() {
     setShowSuggestions(false);
   };
 
-  // --- GÜVENLİ ADRES OKUMA FONKSİYONU ---
-  // Objenin ekrana doğrudan basılmasını engeller, sadece string metin döner
-  const getSafeAddressString = (venue) => {
-    if (!venue?.address) return "Mekanı incele";
-    if (typeof venue.address === "string") return venue.address;
-    if (typeof venue.address === "object") {
-      const city = venue.address.city || "";
-      const district = venue.address.district || "";
-      const line = [district, city].filter(Boolean).join(" / ");
-      return line || "Mekanı incele";
+  // --- %100 KURŞUN GEÇİRMEZ GÜVENLİ ETİKET FONKSİYONU ---
+  // Hata üreten adres nesnesini tamamen bypass eder, sadece güvenli metin basar
+  const getSafeDescription = (venue) => {
+    if (!venue) return "Mekanı incele";
+    
+    // Eğer kategori varsa Türkçe karşılığını bas, çökme ihtimalini sıfırla
+    if (venue.category && typeof venue.category === "string") {
+      const turkishCat = toTurkishCategory(venue.category);
+      if (typeof turkishCat === "string") return turkishCat;
     }
-    return "Mekanı incele";
+    
+    // Eğer address düz bir metin olarak girildiyse onu bas
+    if (venue.address && typeof venue.address === "string") {
+      return venue.address;
+    }
+    
+    return "Mekan detayını gör";
   };
 
   return (
@@ -257,8 +262,9 @@ export default function AppHeader() {
                     }}
                     className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 rounded-xl transition flex flex-col gap-0.5"
                   >
-                    <span className="font-bold text-slate-900">📍 {venue.name || "İsimsiz Mekan"}</span>
-                    <span className="text-[10px] text-slate-400 pl-4">{getSafeAddressString(venue)}</span>
+                    <span className="font-bold text-slate-900">📍 {typeof venue?.name === "string" ? venue.name : "İsimsiz Mekan"}</span>
+                    {/* HATA VEREN ADRES YERİNE %100 GÜVENLİ ETİKET FONKSİYONUNU BAĞLADIK */}
+                    <span className="text-[10px] text-slate-400 pl-4">{getSafeDescription(venue)}</span>
                   </button>
                 ))}
               </div>
