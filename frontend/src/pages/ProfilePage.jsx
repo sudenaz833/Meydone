@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import { notifyAuthChanged } from "../utils/auth";
 import { toTurkishCategory } from "../utils/category";
@@ -12,7 +12,6 @@ import {
   btnDangerOutline,
   btnPrimary,
   card,
-  codeChip,
   dangerZone,
   headingPage,
   headingSection,
@@ -82,7 +81,7 @@ export default function ProfilePage() {
         api.get("/favorites"),
         api.get("/posts/me"),
       ]);
-      const u = meRes.data?.data?.user ?? null;
+      const u = meRes.data?.data?.user ?? meRes.data?.user ?? null;
       setUser(u);
       if (u) {
         setFormName(u.name ?? "");
@@ -93,9 +92,9 @@ export default function ProfilePage() {
         setFormCommentVisibility(String(u.commentVisibility ?? "friends_only"));
         setFormLocationVisibility(String(u.locationVisibility ?? "friends_only"));
       }
-      const items = favRes.data?.data?.items;
+      const items = favRes.data?.data?.items || favRes.data?.items;
       setFavorites(Array.isArray(items) ? items : []);
-      const postItems = postsRes.data?.data?.items;
+      const postItems = postsRes.data?.data?.items || postsRes.data?.items;
       setPosts(Array.isArray(postItems) ? postItems : []);
       setStatus("ok");
     } catch (err) {
@@ -110,9 +109,9 @@ export default function ProfilePage() {
 
   // Çıkış Yapma Fonksiyonu
   const handleLogout = () => {
-    localStorage.removeItem(AUTH_TOKEN_KEY); // Token'ı siler
-    notifyAuthChanged(); // Kimlik değişimi bildirimini tetikler
-    navigate(appRoutes.home, { replace: true }); // Kullanıcıyı ana sayfaya yönlendirir
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    notifyAuthChanged();
+    navigate(appRoutes.home, { replace: true });
   };
 
   async function handleUpdateProfile(e) {
@@ -146,7 +145,7 @@ export default function ProfilePage() {
       }
 
       const { data } = await api.put("/users/profile", payload);
-      const updated = data?.data?.user;
+      const updated = data?.data?.user || data?.user;
       if (updated) {
         setUser(updated);
         setFormName(updated.name ?? "");
@@ -184,7 +183,7 @@ export default function ProfilePage() {
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
           });
-          const updated = data?.data?.user;
+          const updated = data?.data?.user || data?.user;
           if (updated) {
             setUser(updated);
           }
@@ -229,7 +228,7 @@ export default function ProfilePage() {
           ctx.drawImage(img, 0, 0, width, height);
           resolve(canvas.toDataURL("image/jpeg", 0.8));
         };
-        img.onerror = () => reject(new Error("Görsel okunamadı"));
+        img.onload = () => reject(new Error("Görsel okunamadı"));
         img.src = String(reader.result || "");
       };
       reader.onerror = () => reject(new Error("Dosya okunamadı"));
@@ -330,7 +329,7 @@ export default function ProfilePage() {
       }
 
       const { data } = await api.post("/posts", payload);
-      const created = data?.data?.post;
+      const created = data?.data?.post || data?.post;
       if (created) {
         setPosts((prev) => [created, ...prev]);
       } else {
@@ -434,16 +433,28 @@ export default function ProfilePage() {
     );
   }
 
-  if (user?.role === "owner" || user?.role === "admin") {
-    return <Navigate to={appRoutes.admin} replace />;
-  }
+  // --- CEREN BURAYA DIKKAT: ADMINI BURADAN FIRLATAN IF BLOKLARINI SILDİK ---
 
   return (
     <div className="space-y-8">
       {/* 1. Profil Bilgileri Bölümü */}
       <section className={card}>
-        <h1 className={headingPage}>Profil</h1>
-        <p className={`mt-2 ${textMuted}`}>Hesap bilgileriniz (bazı alanlar salt okunur).</p>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className={headingPage}>Profil</h1>
+            <p className={`mt-2 ${textMuted}`}>Hesap bilgileriniz (bazı alanlar salt okunur).</p>
+          </div>
+          {/* Admin veya Owner ise üst tarafa admin paneline hızlı dönüş linki ekledik */}
+          {(user?.role === "admin" || user?.role === "owner") && (
+            <Link
+              to={appRoutes.admin}
+              className="bg-violet-100 text-violet-700 hover:bg-violet-200 px-4 py-2 rounded-xl text-sm font-bold transition shadow-sm"
+            >
+              🛠️ Yönetim Paneline Git
+            </Link>
+          )}
+        </div>
+        
         <div className="mt-6 flex items-center gap-3">
           {user?.profilePhoto ? (
             <img
@@ -490,7 +501,7 @@ export default function ProfilePage() {
           </div>
           <div>
             <dt className={labelCaps}>Rol</dt>
-            <dd className="mt-1 text-stone-800">{user?.role ?? "—"}</dd>
+            <dd className="mt-1 font-bold text-violet-700 uppercase tracking-wider">{user?.role ?? "—"}</dd>
           </div>
         </dl>
       </section>
@@ -889,7 +900,7 @@ export default function ProfilePage() {
         )}
       </section>
 
-      {/* 6. Çıkış Yapma Bölümü (İstediğin Gibi Danger Zone Üstüne Eklendi) */}
+      {/* 6. Oturumu Kapat Bölümü */}
       <section className={card} aria-labelledby="logout-heading">
         <h2 id="logout-heading" className={headingSection}>
           Oturumu kapat
