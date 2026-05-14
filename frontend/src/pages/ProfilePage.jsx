@@ -75,14 +75,21 @@ export default function ProfilePage() {
     }
     setStatus("loading");
     setError("");
+
     try {
+      // --- CEREN BURAYA DİKKAT: PROMISE.ALL'U GÜVENLİ HALE GETİRDİK ---
+      // İstekleri tek bir sepete koyup biri patlayınca hepsini yakmıyoruz.
+      // Her isteğin sonuna .catch() ekledik ki 403 hatası verse bile sayfa açılmaya devam etsin.
+      
       const [meRes, favRes, postsRes] = await Promise.all([
-        api.get("/auth/me"),
-        api.get("/favorites"),
-        api.get("/posts/me"),
+        api.get("/auth/me").catch(err => { console.error("Kullanıcı çekilemedi:", err); return null; }),
+        api.get("/favorites").catch(err => { console.warn("Favoriler çekilemedi (Muhtemelen Admin rolü yetkisiz):", err); return null; }),
+        api.get("/posts/me").catch(err => { console.error("Postlar çekilemedi:", err); return null; })
       ]);
-      const u = meRes.data?.data?.user ?? meRes.data?.user ?? null;
+
+      const u = meRes?.data?.data?.user ?? meRes?.data?.user ?? null;
       setUser(u);
+      
       if (u) {
         setFormName(u.name ?? "");
         setFormSurname(u.surname ?? "");
@@ -91,11 +98,19 @@ export default function ProfilePage() {
         setFormProfileVisibility(String(u.profileVisibility ?? "public"));
         setFormCommentVisibility(String(u.commentVisibility ?? "friends_only"));
         setFormLocationVisibility(String(u.locationVisibility ?? "friends_only"));
+      } else {
+        // Eğer kullanıcı bilgisi hiç gelmediyse hata verdir
+        throw new Error("Kullanıcı bilgileri sunucudan alınamadı.");
       }
-      const items = favRes.data?.data?.items || favRes.data?.items;
+
+      // Favoriler 403 verdiyse boş dizi ayarla, sayfa çökmesin
+      const items = favRes?.data?.data?.items || favRes?.data?.items;
       setFavorites(Array.isArray(items) ? items : []);
-      const postItems = postsRes.data?.data?.items || postsRes.data?.items;
+
+      // Paylaşımlar
+      const postItems = postsRes?.data?.data?.items || postsRes?.data?.items;
       setPosts(Array.isArray(postItems) ? postItems : []);
+      
       setStatus("ok");
     } catch (err) {
       setError(err.apiMessage || err.message || "Profil yüklenemedi");
@@ -107,7 +122,6 @@ export default function ProfilePage() {
     loadData();
   }, [loadData]);
 
-  // Çıkış Yapma Fonksiyonu
   const handleLogout = () => {
     localStorage.removeItem(AUTH_TOKEN_KEY);
     notifyAuthChanged();
@@ -128,15 +142,11 @@ export default function ProfilePage() {
       };
 
       const phoneTrim = formPhone.trim();
-      if (phoneTrim) {
-        payload.phone = phoneTrim;
-      }
+      if (phoneTrim) payload.phone = phoneTrim;
 
       const photoTrim = formProfilePhoto.trim();
       const currentPhoto = String(user?.profilePhoto ?? "").trim();
-      if (photoTrim !== currentPhoto) {
-        payload.profilePhoto = photoTrim;
-      }
+      if (photoTrim !== currentPhoto) payload.profilePhoto = photoTrim;
 
       const newPw = formNewPassword.trim();
       if (newPw) {
@@ -184,9 +194,7 @@ export default function ProfilePage() {
             lng: pos.coords.longitude,
           });
           const updated = data?.data?.user || data?.user;
-          if (updated) {
-            setUser(updated);
-          }
+          if (updated) setUser(updated);
           setLocationMsg("Konum güncellendi.");
           window.setTimeout(() => setLocationMsg(""), 4000);
         } catch (err) {
@@ -197,11 +205,7 @@ export default function ProfilePage() {
       },
       (geoErr) => {
         setLocationBusy(false);
-        setLocationMsg(
-          geoErr?.message === "User denied Geolocation"
-            ? "Konum izni reddedildi."
-            : geoErr?.message || "Konum alınamadı.",
-        );
+        setLocationMsg(geoErr?.message === "User denied Geolocation" ? "Konum izni reddedildi." : geoErr?.message || "Konum alınamadı.");
       },
       { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 },
     );
@@ -221,14 +225,11 @@ export default function ProfilePage() {
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext("2d");
-          if (!ctx) {
-            reject(new Error("Görsel işlenemedi"));
-            return;
-          }
+          if (!ctx) { reject(new Error("Görsel işlenemedi")); return; }
           ctx.drawImage(img, 0, 0, width, height);
           resolve(canvas.toDataURL("image/jpeg", 0.8));
         };
-        img.onload = () => reject(new Error("Görsel okunamadı"));
+        img.onerror = () => reject(new Error("Görsel okunamadı"));
         img.src = String(reader.result || "");
       };
       reader.onerror = () => reject(new Error("Dosya okunamadı"));
@@ -288,14 +289,10 @@ export default function ProfilePage() {
     e.preventDefault();
     setPostError("");
     const text = postText.trim();
-    if (!text) {
-      setPostError("Paylaşım metni boş olamaz.");
-      return;
-    }
+    if (!text) { setPostError("Paylaşım metni boş olamaz."); return; }
     setPostBusy(true);
     try {
-      let lat;
-      let lng;
+      let lat; let lng;
       if (sharePostWithLocation) {
         if (typeof navigator === "undefined" || !navigator.geolocation) {
           setPostError("Konum bu tarayıcıda desteklenmiyor; kutuyu kaldırıp konumsuz paylaşın.");
@@ -303,26 +300,17 @@ export default function ProfilePage() {
         }
         try {
           const pos = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              enableHighAccuracy: true,
-              timeout: 20000,
-              maximumAge: 0,
-            });
+            navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
           });
           lat = pos.coords.latitude;
           lng = pos.coords.longitude;
         } catch {
-          setPostError(
-            "Konum izni verilmedi veya alınamadı. Tarayıcıda konuma izin verin ya da “konumu ekle” seçeneğini kapatıp tekrar deneyin.",
-          );
+          setPostError("Konum izni verilmedi veya alınamadı. Tarayıcıda konuma izin verin ya da “konumu ekle” seçeneğini kapatıp tekrar deneyin.");
           return;
         }
       }
 
-      const payload = {
-        text,
-        photoUrl: postPhotoDataUrl || undefined,
-      };
+      const payload = { text, photoUrl: postPhotoDataUrl || undefined };
       if (lat != null && lng != null) {
         payload.lat = lat;
         payload.lng = lng;
@@ -345,11 +333,8 @@ export default function ProfilePage() {
   }
 
   async function deletePost(postId) {
-    const ok = window.confirm(
-      "Bu paylaşımı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.",
-    );
+    const ok = window.confirm("Bu paylaşımı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.");
     if (!ok) return;
-
     setPostError("");
     setPostDeleteBusyId(postId);
     try {
@@ -363,28 +348,18 @@ export default function ProfilePage() {
   }
 
   async function handleDeleteAccount() {
-    const ok = window.confirm(
-      "Hesabınızı kalıcı olarak silmek istiyor musunuz? Bu işlem geri alınamaz. Yorumlarınız, puanlarınız, favorileriniz ve arkadaşlıklarınız kaldırılır.",
-    );
+    const ok = window.confirm("Hesabınızı kalıcı olarak silmek istiyor musunuz? Bu işlem geri alınamaz.");
     if (!ok) return;
 
     const typedEmail = deleteEmailConfirm.trim().toLowerCase();
     const accountEmail = String(user?.email ?? "").trim().toLowerCase();
-    if (!typedEmail) {
-      setError("Hesabinizi silmek icin e-posta dogrulamasi gerekli.");
-      return;
-    }
-    if (typedEmail !== accountEmail) {
-      setError("Girdiginiz e-posta hesaptaki e-posta ile eslesmiyor.");
-      return;
-    }
+    if (!typedEmail) { setError("Hesabinizi silmek icin e-posta dogrulamasi gerekli."); return; }
+    if (typedEmail !== accountEmail) { setError("Girdiginiz e-posta hesaptaki e-posta ile eslesmiyor."); return; }
 
     setDeleteBusy(true);
     setError("");
     try {
-      await api.delete("/users/account", {
-        data: { email: deleteEmailConfirm.trim() },
-      });
+      await api.delete("/users/account", { data: { email: deleteEmailConfirm.trim() } });
       localStorage.removeItem(AUTH_TOKEN_KEY);
       notifyAuthChanged();
       navigate(appRoutes.home, { replace: true });
@@ -411,12 +386,7 @@ export default function ProfilePage() {
     return (
       <section className={card}>
         <h1 className={headingPage}>Profil</h1>
-        <p className={`mt-3 ${textMuted}`}>
-          <Link to={appRoutes.login} className={linkAccent}>
-            Giriş yapın
-          </Link>{" "}
-          — hesabınızı ve favori mekanlarınızı görün.
-        </p>
+        <p className={`mt-3 ${textMuted}`}><Link to={appRoutes.login} className={linkAccent}>Giriş yapın</Link> — hesabınızı ve favori mekanlarınızı görün.</p>
       </section>
     );
   }
@@ -426,14 +396,8 @@ export default function ProfilePage() {
   }
 
   if (status === "error" && !user) {
-    return (
-      <p className={alertError} role="alert">
-        {error}
-      </p>
-    );
+    return <p className={alertError} role="alert">{error}</p>;
   }
-
-  // --- CEREN BURAYA DIKKAT: ADMINI BURADAN FIRLATAN IF BLOKLARINI SILDİK ---
 
   return (
     <div className="space-y-8">
@@ -444,12 +408,8 @@ export default function ProfilePage() {
             <h1 className={headingPage}>Profil</h1>
             <p className={`mt-2 ${textMuted}`}>Hesap bilgileriniz (bazı alanlar salt okunur).</p>
           </div>
-          {/* Admin veya Owner ise üst tarafa admin paneline hızlı dönüş linki ekledik */}
           {(user?.role === "admin" || user?.role === "owner") && (
-            <Link
-              to={appRoutes.admin}
-              className="bg-violet-100 text-violet-700 hover:bg-violet-200 px-4 py-2 rounded-xl text-sm font-bold transition shadow-sm"
-            >
+            <Link to={appRoutes.admin} className="bg-violet-100 text-violet-700 hover:bg-violet-200 px-4 py-2 rounded-xl text-sm font-bold transition shadow-sm">
               🛠️ Yönetim Paneline Git
             </Link>
           )}
@@ -457,11 +417,7 @@ export default function ProfilePage() {
         
         <div className="mt-6 flex items-center gap-3">
           {user?.profilePhoto ? (
-            <img
-              src={user.profilePhoto}
-              alt="Profil fotoğrafı"
-              className="h-16 w-16 rounded-full border border-rose-100/80 object-cover"
-            />
+            <img src={user.profilePhoto} alt="Profil fotoğrafı" className="h-16 w-16 rounded-full border border-rose-100/80 object-cover" />
           ) : (
             <div className="flex h-16 w-16 items-center justify-center rounded-full border border-rose-100/80 bg-violet-50 text-lg font-semibold text-violet-700">
               {(user?.name || user?.username || "?").slice(0, 1).toUpperCase()}
@@ -471,167 +427,65 @@ export default function ProfilePage() {
         </div>
 
         <dl className="mt-8 grid gap-5 sm:grid-cols-2">
-          <div>
-            <dt className={labelCaps}>E-posta</dt>
-            <dd className="mt-1 text-stone-800">{user?.email ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className={labelCaps}>Kullanıcı adı</dt>
-            <dd className="mt-1 text-stone-800">{user?.username ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className={labelCaps}>Soyad</dt>
-            <dd className="mt-1 text-stone-800">{user?.surname ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className={labelCaps}>Doğum tarihi</dt>
-            <dd className="mt-1 text-stone-800">{formatDate(user?.birthDate)}</dd>
-          </div>
-          <div>
-            <dt className={labelCaps}>Profil görünürlüğü</dt>
-            <dd className="mt-1 text-stone-800">{user?.profileVisibility ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className={labelCaps}>Yorum görünürlüğü</dt>
-            <dd className="mt-1 text-stone-800">{user?.commentVisibility ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className={labelCaps}>Konum görünürlüğü</dt>
-            <dd className="mt-1 text-stone-800">{user?.locationVisibility ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className={labelCaps}>Rol</dt>
-            <dd className="mt-1 font-bold text-violet-700 uppercase tracking-wider">{user?.role ?? "—"}</dd>
-          </div>
+          <div><dt className={labelCaps}>E-posta</dt><dd className="mt-1 text-stone-800">{user?.email ?? "—"}</dd></div>
+          <div><dt className={labelCaps}>Kullanıcı adı</dt><dd className="mt-1 text-stone-800">{user?.username ?? "—"}</dd></div>
+          <div><dt className={labelCaps}>Soyad</dt><dd className="mt-1 text-stone-800">{user?.surname ?? "—"}</dd></div>
+          <div><dt className={labelCaps}>Doğum tarihi</dt><dd className="mt-1 text-stone-800">{formatDate(user?.birthDate)}</dd></div>
+          <div><dt className={labelCaps}>Profil görünürlüğü</dt><dd className="mt-1 text-stone-800">{user?.profileVisibility ?? "—"}</dd></div>
+          <div><dt className={labelCaps}>Yorum görünürlüğü</dt><dd className="mt-1 text-stone-800">{user?.commentVisibility ?? "—"}</dd></div>
+          <div><dt className={labelCaps}>Konum görünürlüğü</dt><dd className="mt-1 text-stone-800">{user?.locationVisibility ?? "—"}</dd></div>
+          <div><dt className={labelCaps}>Rol</dt><dd className="mt-1 font-bold text-violet-700 uppercase tracking-wider">{user?.role ?? "—"}</dd></div>
         </dl>
       </section>
 
       {/* 2. Profil Güncelleme Formu */}
       <section className={card} aria-labelledby="edit-heading">
-        <h2 id="edit-heading" className={headingSection}>
-          Profili güncelle
-        </h2>
-
+        <h2 id="edit-heading" className={headingSection}>Profili güncelle</h2>
         <form className="mt-8 space-y-5" onSubmit={handleUpdateProfile}>
           <div>
-            <label htmlFor="profile-name" className={labelUi}>
-              Ad
-            </label>
-            <input
-              id="profile-name"
-              name="name"
-              type="text"
-              required
-              maxLength={100}
-              value={formName}
-              onChange={(e) => setFormName(e.target.value)}
-              className={inputUi}
-            />
+            <label htmlFor="profile-name" className={labelUi}>Ad</label>
+            <input id="profile-name" name="name" type="text" required maxLength={100} value={formName} onChange={(e) => setFormName(e.target.value)} className={inputUi} />
           </div>
           <div>
-            <label htmlFor="profile-surname" className={labelUi}>
-              Soyad
-            </label>
-            <input
-              id="profile-surname"
-              name="surname"
-              type="text"
-              required
-              maxLength={100}
-              value={formSurname}
-              onChange={(e) => setFormSurname(e.target.value)}
-              className={inputUi}
-            />
+            <label htmlFor="profile-surname" className={labelUi}>Soyad</label>
+            <input id="profile-surname" name="surname" type="text" required maxLength={100} value={formSurname} onChange={(e) => setFormSurname(e.target.value)} className={inputUi} />
           </div>
           <div>
-            <label htmlFor="profile-phone" className={labelUi}>
-              Telefon <span className="font-normal text-stone-500">(isteğe bağlı, 7–15 rakam)</span>
-            </label>
-            <input
-              id="profile-phone"
-              name="phone"
-              type="tel"
-              autoComplete="tel"
-              placeholder="+905551234567"
-              value={formPhone}
-              onChange={(e) => setFormPhone(e.target.value)}
-              className={inputUi}
-            />
+            <label htmlFor="profile-phone" className={labelUi}>Telefon <span className="font-normal text-stone-500">(isteğe bağlı, 7–15 rakam)</span></label>
+            <input id="profile-phone" name="phone" type="tel" autoComplete="tel" placeholder="+905551234567" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} className={inputUi} />
           </div>
           <div>
-            <label htmlFor="profile-visibility" className={labelUi}>
-              Profilimi kimler görebilsin?
-            </label>
-            <select
-              id="profile-visibility"
-              value={formProfileVisibility}
-              onChange={(e) => setFormProfileVisibility(e.target.value)}
-              className={inputUi}
-            >
+            <label htmlFor="profile-visibility" className={labelUi}>Profilimi kimler görebilsin?</label>
+            <select id="profile-visibility" value={formProfileVisibility} onChange={(e) => setFormProfileVisibility(e.target.value)} className={inputUi}>
               <option value="public">Herkes</option>
               <option value="friends_only">Sadece arkadaşlar</option>
               <option value="private">Hiç kimse</option>
             </select>
           </div>
           <div>
-            <label htmlFor="comment-visibility" className={labelUi}>
-              Yorumlarımı kimler görebilsin?
-            </label>
-            <select
-              id="comment-visibility"
-              value={formCommentVisibility}
-              onChange={(e) => setFormCommentVisibility(e.target.value)}
-              className={inputUi}
-            >
+            <label htmlFor="comment-visibility" className={labelUi}>Yorumlarımı kimler görebilsin?</label>
+            <select id="comment-visibility" value={formCommentVisibility} onChange={(e) => setFormCommentVisibility(e.target.value)} className={inputUi}>
               <option value="public">Herkes</option>
               <option value="friends_only">Sadece arkadaşlar</option>
               <option value="private">Hiç kimse</option>
             </select>
           </div>
           <div>
-            <label htmlFor="location-visibility" className={labelUi}>
-              Son kaydettiğim konumu kimler görebilsin?
-            </label>
-            <select
-              id="location-visibility"
-              value={formLocationVisibility}
-              onChange={(e) => setFormLocationVisibility(e.target.value)}
-              className={inputUi}
-            >
+            <label htmlFor="location-visibility" className={labelUi}>Son kaydettiğim konumu kimler görebilsin?</label>
+            <select id="location-visibility" value={formLocationVisibility} onChange={(e) => setFormLocationVisibility(e.target.value)} className={inputUi}>
               <option value="public">Herkes</option>
               <option value="friends_only">Sadece arkadaşlar</option>
               <option value="private">Hiç kimse</option>
             </select>
-            <p className={`mt-2 ${textSmall}`}>
-              Arkadaş profilinde konum yalnızca karşılıklı arkadaşlıkta gösterilir; gizli seçilirse arkadaşlar da görmez.
-            </p>
+            <p className={`mt-2 ${textSmall}`}>Arkadaş profilinde konum yalnızca karşılıklı arkadaşlıkta gösterilir; gizli seçilirse arkadaşlar da görmez.</p>
           </div>
           <div>
-            <label htmlFor="profile-photo-file" className={labelUi}>
-              Profil fotoğrafı
-            </label>
-            <input
-              id="profile-photo-file"
-              type="file"
-              accept="image/*"
-              capture="user"
-              onChange={handleProfilePhotoChange}
-              className={inputUi}
-            />
+            <label htmlFor="profile-photo-file" className={labelUi}>Profil fotoğrafı</label>
+            <input id="profile-photo-file" type="file" accept="image/*" capture="user" onChange={handleProfilePhotoChange} className={inputUi} />
             {formProfilePhoto ? (
               <div className="mt-3 space-y-2">
-                <img
-                  src={formProfilePhoto}
-                  alt="Profil fotoğrafı önizleme"
-                  className="h-16 w-16 rounded-full border border-rose-100/80 object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={() => setFormProfilePhoto("")}
-                  className="text-sm font-medium text-rose-700 underline underline-offset-2"
-                >
-                  Fotoğrafı kaldır
-                </button>
+                <img src={formProfilePhoto} alt="Profil fotoğrafı önizleme" className="h-16 w-16 rounded-full border border-rose-100/80 object-cover" />
+                <button type="button" onClick={() => setFormProfilePhoto("")} className="text-sm font-medium text-rose-700 underline underline-offset-2">Fotoğrafı kaldır</button>
               </div>
             ) : null}
           </div>
@@ -641,257 +495,89 @@ export default function ProfilePage() {
             <p className={`mt-1 ${textSmall}`}>Boş bırakırsanız mevcut şifre korunur.</p>
             <div className="mt-4 space-y-4">
               <div>
-                <label htmlFor="profile-current-password" className={labelUi}>
-                  Mevcut şifre
-                </label>
-                <input
-                  id="profile-current-password"
-                  name="currentPassword"
-                  type="password"
-                  autoComplete="current-password"
-                  value={formCurrentPassword}
-                  onChange={(e) => setFormCurrentPassword(e.target.value)}
-                  className={inputUi}
-                />
+                <label htmlFor="profile-current-password" className={labelUi}>Mevcut şifre</label>
+                <input id="profile-current-password" name="currentPassword" type="password" autoComplete="current-password" value={formCurrentPassword} onChange={(e) => setFormCurrentPassword(e.target.value)} className={inputUi} />
               </div>
               <div>
-                <label htmlFor="profile-new-password" className={labelUi}>
-                  Yeni şifre <span className="text-stone-500">(en az 8 karakter)</span>
-                </label>
-                <input
-                  id="profile-new-password"
-                  name="password"
-                  type="password"
-                  autoComplete="new-password"
-                  minLength={8}
-                  value={formNewPassword}
-                  onChange={(e) => setFormNewPassword(e.target.value)}
-                  className={inputUi}
-                />
+                <label htmlFor="profile-new-password" className={labelUi}>Yeni şifre <span className="text-stone-500">(en az 8 karakter)</span></label>
+                <input id="profile-new-password" name="password" type="password" autoComplete="new-password" minLength={8} value={formNewPassword} onChange={(e) => setFormNewPassword(e.target.value)} className={inputUi} />
               </div>
             </div>
           </div>
 
-          {saveError ? (
-            <p className="rounded-2xl border border-rose-100 bg-rose-50/90 px-4 py-3 text-sm text-rose-800" role="alert">
-              {saveError}
-            </p>
-          ) : null}
-          {saveStatus === "saved" ? (
-            <p className={alertSuccess} role="status">
-              Profil kaydedildi.
-            </p>
-          ) : null}
-
-          <button type="submit" disabled={saveStatus === "saving"} className={btnPrimary}>
-            {saveStatus === "saving" ? "Kaydediliyor…" : "Değişiklikleri kaydet"}
-          </button>
+          {saveError ? <p className="rounded-2xl border border-rose-100 bg-rose-50/90 px-4 py-3 text-sm text-rose-800" role="alert">{saveError}</p> : null}
+          {saveStatus === "saved" ? <p className={alertSuccess} role="status">Profil kaydedildi.</p> : null}
+          <button type="submit" disabled={saveStatus === "saving"} className={btnPrimary}>{saveStatus === "saving" ? "Kaydediliyor…" : "Değişiklikleri kaydet"}</button>
         </form>
       </section>
 
       {/* 3. Konum Paylaşımı Bölümü */}
       <section className={card} aria-labelledby="share-location-heading">
-        <h2 id="share-location-heading" className={headingSection}>
-          Konum paylaşımı
-        </h2>
-        <p className={`mt-2 ${textMuted}`}>
-          Son konumunuz, yukarıdaki “konum görünürlüğü” ayarına göre yalnızca arkadaşlarınıza gösterilir.
-        </p>
-        <p className={`mt-4 ${textSmall}`}>
-          Son güncelleme:{" "}
-          {user?.lastLocationAt
-            ? new Date(user.lastLocationAt).toLocaleString("tr-TR", {
-                dateStyle: "medium",
-                timeStyle: "short",
-              })
-            : "—"}
-        </p>
-        <button type="button" disabled={locationBusy} onClick={handleUpdateMyLocation} className={`mt-4 ${btnPrimary}`}>
-          {locationBusy ? "Konum alınıyor…" : "Konumumu güncelle"}
-        </button>
-        {locationMsg ? (
-          <p
-            className={`mt-3 text-sm ${locationMsg === "Konum güncellendi." ? alertSuccess : alertError}`}
-            role={locationMsg === "Konum güncellendi." ? "status" : "alert"}
-          >
-            {locationMsg}
-          </p>
-        ) : null}
+        <h2 id="share-location-heading" className={headingSection}>Konum paylaşımı</h2>
+        <p className={`mt-2 ${textMuted}`}>Son konumunuz, yukarıdaki “konum görünürlüğü” ayarına göre yalnızca arkadaşlarınıza gösterilir.</p>
+        <p className={`mt-4 ${textSmall}`}>Son güncelleme: {user?.lastLocationAt ? new Date(user.lastLocationAt).toLocaleString("tr-TR", { dateStyle: "medium", timeStyle: "short" }) : "—"}</p>
+        <button type="button" disabled={locationBusy} onClick={handleUpdateMyLocation} className={`mt-4 ${btnPrimary}`}>{locationBusy ? "Konum alınıyor…" : "Konumumu güncelle"}</button>
+        {locationMsg ? <p className={`mt-3 text-sm ${locationMsg === "Konum güncellendi." ? alertSuccess : alertError}`} role={locationMsg === "Konum güncellendi." ? "status" : "alert"}>{locationMsg}</p> : null}
       </section>
 
-      {/* 4. Favori Mekanlar Bölümü */}
-      <section className={card} aria-labelledby="favorites-heading">
-        <h2 id="favorites-heading" className={headingSection}>
-          Favori mekanlar
-        </h2>
-        <p className={`mt-2 ${textMuted}`}>Kaydettiğiniz yerler. Kaldırmak için sil düğmesine basın.</p>
-
-        {favorites.length === 0 ? (
-          <p className={`mt-8 ${textMuted}`}>Henüz favori yok. Anasayfa veya mekan sayfasından ekleyin.</p>
-        ) : (
-          <ul className="mt-8 divide-y divide-rose-100/50">
-            {favorites.map((f) => {
-              const v = f.venue;
-              const vid = venueRefId(v);
-              if (!vid) return null;
-              const name = v?.name ?? "Mekan";
-              const category = toTurkishCategory(v?.category ?? "");
-              const rating =
-                typeof v?.rating === "number" && !Number.isNaN(v.rating) ? v.rating.toFixed(1) : null;
-
-              return (
-                <li key={f._id ?? vid} className="flex flex-wrap items-center justify-between gap-4 py-5 first:pt-0">
-                  <div className="min-w-0">
-                    <Link
-                      to={appRoutes.venueDetail.replace(":id", vid)}
-                      className="text-lg font-semibold text-violet-800 transition hover:text-rose-500"
-                    >
-                      {name}
-                    </Link>
-                    {category ? (
-                      <p className="mt-1">
-                        <span className={pillCategory}>{category}</span>
-                      </p>
-                    ) : null}
-                    {rating != null ? (
-                      <p className="mt-2 text-sm font-medium text-amber-600">★ {rating}</p>
-                    ) : null}
-                  </div>
-                  <button
-                    type="button"
-                    disabled={removingId === vid}
-                    onClick={() => removeFavorite(vid)}
-                    className={btnDangerOutline}
-                  >
-                    {removingId === vid ? "Kaldırılıyor…" : "Kaldır"}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+      {/* 4. Favori Mekanlar Bölümü (Admin rolü yetkisizse burası temiz boş kalacak, sayfa çökmeyecek) */}
+      {user?.role !== "admin" && (
+        <section className={card} aria-labelledby="favorites-heading">
+          <h2 id="favorites-heading" className={headingSection}>Favori mekanlar</h2>
+          <p className={`mt-2 ${textMuted}`}>Kaydettiğiniz yerler. Kaldırmak için sil düğmesine basın.</p>
+          {favorites.length === 0 ? (
+            <p className={`mt-8 ${textMuted}`}>Henüz favori yok. Anasayfa veya mekan sayfasından ekleyin.</p>
+          ) : (
+            <ul className="mt-8 divide-y divide-rose-100/50">
+              {favorites.map((f) => {
+                const v = f.venue; const vid = venueRefId(v);
+                if (!vid) return null;
+                return (
+                  <li key={f._id ?? vid} className="flex flex-wrap items-center justify-between gap-4 py-5 first:pt-0">
+                    <div className="min-w-0">
+                      <Link to={appRoutes.venueDetail.replace(":id", vid)} className="text-lg font-semibold text-violet-800 transition hover:text-rose-500">{v?.name ?? "Mekan"}</Link>
+                      {v?.category && <p className="mt-1"><span className={pillCategory}>{toTurkishCategory(v.category)}</span></p>}
+                    </div>
+                    <button type="button" disabled={removingId === vid} onClick={() => removeFavorite(vid)} className={btnDangerOutline}>{removingId === vid ? "Kaldırılıyor…" : "Kaldır"}</button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      )}
 
       {/* 5. Paylaşımlarım Bölümü */}
       <section className={card} aria-labelledby="posts-heading">
-        <h2 id="posts-heading" className={headingSection}>
-          Paylaşımlarım
-        </h2>
-        <p className={`mt-2 ${textMuted}`}>Profilinde gözükecek paylaşım metni ve istersen fotoğraf ekle.</p>
+        <h2 id="posts-heading" className={headingSection}>Paylaşımlarım</h2>
         <form className="mt-6 space-y-4" onSubmit={createPost}>
           <div>
-            <label htmlFor="post-text" className={labelUi}>
-              Ne paylaşmak istiyorsun?
-            </label>
-            <textarea
-              id="post-text"
-              rows={4}
-              maxLength={1000}
-              value={postText}
-              onChange={(e) => setPostText(e.target.value)}
-              className={inputUi}
-              placeholder="Bugün yeni bir mekan denedim..."
-            />
+            <label htmlFor="post-text" className={labelUi}>Ne paylaşmak istiyorsun?</label>
+            <textarea id="post-text" rows={4} maxLength={1000} value={postText} onChange={(e) => setPostText(e.target.value)} className={inputUi} placeholder="Bugün yeni bir mekan denedim..." />
           </div>
           <div>
-            <label htmlFor="post-photo-file" className={labelUi}>
-              Fotoğraf (opsiyonel)
-            </label>
-            <input
-              id="post-photo-file"
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={handlePostPhotoChange}
-              className={inputUi}
-            />
-            {postPhotoDataUrl ? (
+            <label htmlFor="post-photo-file" className={labelUi}>Fotoğraf (opsiyonel)</label>
+            <input id="post-photo-file" type="file" accept="image/*" capture="environment" onChange={handlePostPhotoChange} className={inputUi} />
+            {postPhotoDataUrl && (
               <div className="mt-3 space-y-2">
-                <img
-                  src={postPhotoDataUrl}
-                  alt="Paylaşım fotoğrafı önizleme"
-                  className="max-h-52 rounded-xl border border-rose-100/80 object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={() => setPostPhotoDataUrl("")}
-                  className="text-sm font-medium text-rose-700 underline underline-offset-2"
-                >
-                  Fotoğrafı kaldır
-                </button>
+                <img src={postPhotoDataUrl} alt="Paylaşım fotoğrafı önizleme" className="max-h-52 rounded-xl border border-rose-100/80 object-cover" />
+                <button type="button" onClick={() => setPostPhotoDataUrl("")} className="text-sm font-medium text-rose-700 underline underline-offset-2">Fotoğrafı kaldır</button>
               </div>
-            ) : null}
+            )}
           </div>
-          <div className="flex items-start gap-3 rounded-2xl border border-rose-100/80 bg-stone-50/80 px-4 py-3">
-            <input
-              id="post-share-location"
-              type="checkbox"
-              checked={sharePostWithLocation}
-              onChange={(e) => setSharePostWithLocation(e.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-rose-200 text-violet-600 focus:ring-violet-500"
-            />
-            <label htmlFor="post-share-location" className="cursor-pointer text-sm font-medium text-stone-800">
-              Bu paylaşımda konumumu ekle
-              <span className={`mt-1 block font-normal text-stone-500 ${textSmall}`}>
-                Paylaş dediğinizde tarayıcı konum izni ister. Konum yalnızca arkadaşlarınıza gösterilir.
-              </span>
-            </label>
-          </div>
-          {postError ? (
-            <p className="rounded-2xl border border-rose-100 bg-rose-50/90 px-4 py-3 text-sm text-rose-800" role="alert">
-              {postError}
-            </p>
-          ) : null}
-          <button type="submit" disabled={postBusy} className={btnPrimary}>
-            {postBusy ? "Paylaşılıyor…" : "Paylaş"}
-          </button>
+          <button type="submit" disabled={postBusy} className={btnPrimary}>{postBusy ? "Paylaşılıyor…" : "Paylaş"}</button>
         </form>
 
-        {posts.length === 0 ? (
-          <p className={`mt-8 ${textMuted}`}>Henüz paylaşım yok.</p>
-        ) : (
+        {posts.length === 0 ? <p className={`mt-8 ${textMuted}`}>Henüz paylaşım yok.</p> : (
           <ul className="mt-8 divide-y divide-rose-100/50">
             {posts.map((post) => {
               const pid = String(post?._id ?? "");
               return (
                 <li key={pid} className="py-5 first:pt-0">
                   <p className="whitespace-pre-wrap text-sm leading-relaxed text-stone-800">{post?.text ?? ""}</p>
-                  {post?.photoUrl ? (
-                    <img
-                      src={post.photoUrl}
-                      alt="Paylaşım görseli"
-                      className="mt-3 max-h-96 max-w-md rounded-xl border border-rose-100/80 object-cover"
-                    />
-                  ) : null}
-                  {post?.locationLat != null && post?.locationLng != null ? (
-                    <p className={`mt-3 ${textMuted}`}>
-                      <a
-                        href={`https://www.openstreetmap.org/?mlat=${encodeURIComponent(String(post.locationLat))}&mlon=${encodeURIComponent(String(post.locationLng))}#map=15/${encodeURIComponent(String(post.locationLat))}/${encodeURIComponent(String(post.locationLng))}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={linkAccent}
-                      >
-                        Paylaşım konumu (harita)
-                      </a>
-                    </p>
-                  ) : null}
                   <div className="mt-3 flex items-center justify-between gap-3">
-                    <p className={`text-xs ${textSmall}`}>
-                      {post?.createdAt
-                        ? new Date(post.createdAt).toLocaleString("tr-TR", {
-                            dateStyle: "medium",
-                            timeStyle: "short",
-                          })
-                        : ""}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => deletePost(pid)}
-                      disabled={postDeleteBusyId === pid}
-                      className={btnDangerOutline}
-                    >
-                      {postDeleteBusyId === pid ? "Siliniyor…" : "Sil"}
-                    </button>
+                    <p className={`text-xs ${textSmall}`}>{post?.createdAt ? new Date(post.createdAt).toLocaleString("tr-TR", { dateStyle: "medium", timeStyle: "short" }) : ""}</p>
+                    <button type="button" onClick={() => deletePost(pid)} disabled={postDeleteBusyId === pid} className={btnDangerOutline}>{postDeleteBusyId === pid ? "Siliniyor…" : "Sil"}</button>
                   </div>
                 </li>
               );
@@ -902,55 +588,9 @@ export default function ProfilePage() {
 
       {/* 6. Oturumu Kapat Bölümü */}
       <section className={card} aria-labelledby="logout-heading">
-        <h2 id="logout-heading" className={headingSection}>
-          Oturumu kapat
-        </h2>
-        <p className={`mt-2 mb-4 ${textMuted}`}>Uygulamadan güvenli bir şekilde çıkış yapın.</p>
-        <button
-          type="button"
-          onClick={handleLogout}
-          className={`${btnPrimary} w-full sm:w-auto bg-violet-600 hover:bg-violet-700`}
-        >
-          Çıkış yap
-        </button>
+        <h2 id="logout-heading" className={headingSection}>Oturumu kapat</h2>
+        <button type="button" onClick={handleLogout} className={`${btnPrimary} w-full sm:w-auto bg-violet-600 hover:bg-violet-700`}>Çıkış yap</button>
       </section>
-
-      {/* 7. Tehlikeli Bölge (Hesabı Sil) */}
-      <section className={dangerZone} aria-labelledby="danger-heading">
-        <h2 id="danger-heading" className="text-lg font-semibold text-rose-900">
-          Hesabı sil
-        </h2>
-        <p className="mt-3 text-sm text-rose-800/90">
-          Hesabinizi ve iliskili verileri kalici olarak silin. Islem icin e-posta dogrulamasi zorunludur.
-        </p>
-        <div className="mt-4">
-          <label htmlFor="delete-email-confirm" className={labelUi}>
-            E-posta dogrulamasi
-          </label>
-          <input
-            id="delete-email-confirm"
-            type="email"
-            value={deleteEmailConfirm}
-            onChange={(e) => setDeleteEmailConfirm(e.target.value)}
-            className={inputUi}
-            placeholder="Hesap e-postanizi yazin"
-          />
-        </div>
-        <button
-          type="button"
-          disabled={deleteBusy}
-          onClick={handleDeleteAccount}
-          className={`${btnDangerOutline} mt-6 border-rose-300 bg-white/90 font-semibold text-rose-900 hover:bg-rose-100`}
-        >
-          {deleteBusy ? "Siliniyor…" : "Hesabımı sil"}
-        </button>
-      </section>
-
-      {error ? (
-        <p className={alertWarn} role="alert">
-          {error}
-        </p>
-      ) : null}
     </div>
   );
 }
