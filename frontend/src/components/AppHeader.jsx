@@ -15,6 +15,7 @@ export default function AppHeader() {
 
   const loggedIn = typeof window !== "undefined" && !!localStorage.getItem(AUTH_TOKEN_KEY);
   
+  const [currentUser, setCurrentUser] = useState(null); // Canlı kullanıcı bilgisini tutacak state
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchDraft, setSearchDraft] = useState(searchParams.get("q") ?? "");
@@ -66,19 +67,26 @@ export default function AppHeader() {
     }
   }, [searchParams, loggedIn, searchDraft]);
 
-  // --- CEREN'İN NOKTA ATIŞI DOĞRULANMIŞ BİLDİRİM ÇEKME MANTIĞI ---
-  const fetchAllNotifications = useCallback(async () => {
+  // 2. Birleştirilmiş Bildirim Çekme ve Kullanıcı Bilgisi Güncelleme Mantığı
+  const fetchAllData = useCallback(async () => {
     if (!loggedIn) return;
     try {
-      // FriendsPage'deki birebir aynı endpoint'leri çağırıyoruz artık!
-      const [likesResponse, friendsPendingResponse] = await Promise.all([
+      // --- CEREN İÇİN KULLANICI BİLGİSİNİ DE PARALELDE ÇEKİYORUZ ---
+      const [likesResponse, friendsPendingResponse, meResponse] = await Promise.all([
         api.get("/notifications/comment-likes").catch(() => null),
-        api.get("/friends/pending").catch(() => null) 
+        api.get("/friends/pending").catch(() => null),
+        api.get("/auth/me").catch(() => null) // Profil resmi ve isim kontrolü için
       ]);
+
+      // Kullanıcı verisini güncelle
+      const userData = meResponse?.data?.data?.user || meResponse?.data?.user;
+      if (userData) {
+        setCurrentUser(userData);
+      }
 
       const allCombined = [];
 
-      // 1. Yorum Beğeni Bildirimlerini İşle
+      // Yorum Beğeni Bildirimlerini İşle
       const rawLikes = likesResponse?.data?.data?.items || likesResponse?.data?.items || [];
       if (Array.isArray(rawLikes)) {
         rawLikes.forEach(item => {
@@ -97,14 +105,11 @@ export default function AppHeader() {
         });
       }
 
-      // 2. Gelen Arkadaşlık İsteklerini İşle (Tam Doğru Yapı)
-      // FriendsPage'deki gibi data.data.incoming dizisini okuyoruz
+      // Gelen Arkadaşlık İsteklerini İşle
       const incomingRequests = friendsPendingResponse?.data?.data?.incoming || [];
       if (Array.isArray(incomingRequests)) {
         incomingRequests.forEach(item => {
           if (!item) return;
-          
-          // FriendsPage'deki gibi gönderen kişi 'from' objesi içinde yer alıyor
           const fromUser = item.from;
           const username = fromUser?.name || fromUser?.username || "Bir kullanıcı";
 
@@ -113,36 +118,43 @@ export default function AppHeader() {
             senderName: username,
             text: `sana arkadaşlık isteği gönderdi.`,
             icon: "👥",
-            // Eğer objede özel bir tarih yoksa güvenli bir yedek tarih veriyoruz
             createdAt: item.createdAt || item.updatedAt || new Date()
           });
         });
       }
 
-      // Tüm bildirimleri zamana göre en yeni en üstte olacak şekilde sırala
       allCombined.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       
-      // Yeni bildirim kontrolü ve unread balonu
       if (allCombined.length > notifications.length && !showNotifications) {
         setHasUnread(true);
       }
       
       setNotifications(allCombined);
     } catch (err) {
-      console.error("Bildirimler birleştirilirken hata:", err);
+      console.error("Veriler çekilirken hata oluştu:", err);
     }
   }, [loggedIn, notifications.length, showNotifications]);
 
-  // Her 5 saniyede bir bildirimleri otomatik tazeler
   useEffect(() => {
     if (loggedIn) {
-      fetchAllNotifications();
+      fetchAllData();
       const interval = setInterval(() => {
-        fetchAllNotifications();
+        fetchAllData();
       }, 5000); 
       return () => clearInterval(interval);
     }
-  }, [loggedIn, fetchAllNotifications]);
+  }, [loggedIn, fetchAllData]);
+
+  // Profil sayfasında fotoğraf değiştirilirse üst bar anında güncellensin diye event listener ekledik
+  useEffect(() => {
+    const handleProfileUpdateEvent = (e) => {
+      if (e.detail) {
+        setCurrentUser(e.detail);
+      }
+    };
+    window.addEventListener("profile-updated", handleProfileUpdateEvent);
+    return () => window.removeEventListener("profile-updated", handleProfileUpdateEvent);
+  }, []);
 
   const handleNotifClick = () => {
     const nextShowState = !showNotifications;
@@ -254,6 +266,35 @@ export default function AppHeader() {
       : [];
   }, [searchDraft, loggedIn]);
 
+  // --- DİNAMİK HARF VE FOTOĞRAF KONTROLÜ ---
+  const renderProfileButton = useMemo(() => {
+    if (!loggedIn) {
+      return (
+        <Link to={appRoutes.login} className="text-sm font-semibold text-rose-500 hover:text-rose-600 px-3 py-1.5 rounded-xl bg-rose-50 transition">
+          Giriş Yap
+        </Link>
+      );
+    }
+
+    // Eğer kullanıcının profil fotoğrafı varsa direkt fotoğrafı bas
+    if (currentUser?.profilePhoto) {
+      return (
+        <Link to={appRoutes.profile} className="w-8 h-8 rounded-full border border-rose-100 shadow-sm overflow-hidden block">
+          <img src={currentUser.profilePhoto} alt="Profil" className="w-full h-full object-cover" />
+        </Link>
+      );
+    }
+
+    // Eğer fotoğrafı yoksa adının veya kullanıcı adının baş harfini al (Varsayılan 'M' yedeklemesi)
+    const initialLetter = (currentUser?.name || currentUser?.username || "M").slice(0, 1).toUpperCase();
+
+    return (
+      <Link to={appRoutes.profile} className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-700 font-bold text-sm shadow-sm hover:bg-rose-200 transition">
+        {initialLetter}
+      </Link>
+    );
+  }, [loggedIn, currentUser]);
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-100 pt-[env(safe-area-inset-top)]">
       <div className="flex items-center justify-between px-4 h-14">
@@ -306,11 +347,8 @@ export default function AppHeader() {
             </div>
           )}
           
-          {loggedIn ? (
-            <Link to={appRoutes.profile} className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-700 font-bold text-sm overflow-hidden">S</Link>
-          ) : (
-            <Link to={appRoutes.login} className="text-sm font-semibold text-rose-500 hover:text-rose-600 px-3 py-1.5 rounded-xl bg-rose-50 transition">Giriş Yap</Link>
-          )}
+          {/* Dinamik render edilen profil alanı */}
+          {renderProfileButton}
         </div>
       </div>
 
