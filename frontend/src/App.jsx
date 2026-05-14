@@ -30,35 +30,30 @@ export default function App() {
   return (
     <div className="min-h-screen bg-white selection:bg-rose-100">
       <Routes>
-        {/* Misafir Sayfaları (Giriş/Kayıt) */}
+        {/* Misafir Sayfaları (Sadece giriş yapmayanlar girebilir) */}
         <Route element={<GuestOnly />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
         </Route>
 
-        {/* Herkese Açık Sayfalar (Mobil Kabuk Dahil) */}
-        <Route element={<AppShell />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/mekanlar" element={<VenuesListPage />} />
-          <Route path="/venues/:id" element={<VenueDetailPage />} />
-          
-          {/* --- CEREN BURAYA DİKKAT: PROFİLİ BURAYA TAŞIDIK ---
-            Profil sayfasını RequireAuth duvarının dışına, genel AppShell içine aldık.
-            ProfilePage kendi içinde zaten giriş kontrolü (status === 'guest') yaptığı için 
-            giriş yapmayanları yine engelleyecek ama giriş yapmış admini asla engellemeyecek!
-          */}
-          <Route path="/profile" element={<ProfilePage />} />
-        </Route>
-
-        {/* Sadece Giriş Yapmış Kullanıcılar ve Özel Sayfalar */}
+        {/* --- CEREN'İN İSTEDİĞİ %100 GÜVENLİ KORUMA DUVARI ---
+            Giriş Yapılmadan Hiçbir İşlem Yapılamaz, Arama Dahil Sayfalar Açılmaz!
+            Bütün sayfaları RequireAuth korumasının altına topladık.
+        */}
         <Route element={<RequireAuth />}>
           <Route element={<AppShell />}>
+            {/* Bu sayfalara artık giriş yapmadan erişmek İMKANSIZ */}
+            <Route path="/" element={<HomePage />} />
+            <Route path="/mekanlar" element={<VenuesListPage />} />
+            <Route path="/venues/:id" element={<VenueDetailPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
             <Route path="/friends" element={<FriendsPage />} />
             <Route path="/friends/profile/:id" element={<FriendProfilePage />} />
             <Route path="/admin" element={<AdminDashboardPage />} />
           </Route>
         </Route>
 
+        {/* Bilinmeyen tüm rotaları yakalar ve yönlendirir */}
         <Route path="*" element={<NotFoundRedirect />} />
       </Routes>
     </div>
