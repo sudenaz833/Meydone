@@ -118,7 +118,18 @@ export default function AppHeader() {
     setShowSuggestions(false);
   };
 
-  // --- %100 ÇÖKMEYEN AKILLI ETİKETLEME VE FİLTRELEME MANTIĞI ---
+  // --- SAF BAŞLANGIÇ KONTROL FONKSİYONU ---
+  // Metin tamamen kullanıcının yazdığı harflerle mi başlıyor diye bakar (Kelimelere bölmez, cümlenin en başına bakar)
+  const checkStrictStartsWith = (sourceText, queryText) => {
+    const source = String(sourceText || "").trim().toLowerCase();
+    const query = String(queryText || "").trim().toLowerCase();
+    if (!source || !query) return false;
+
+    // Sadece ve sadece metnin en başı query ile başlıyorsa true döner
+    return source.startsWith(query);
+  };
+
+  // 3. SAF BAŞLANGICA GÖRE AKILLI FİLTRELEME MANTIĞI
   const processedSuggestions = useMemo(() => {
     const query = (searchDraft || "").trim().toLowerCase();
     if (!query) return [];
@@ -128,9 +139,8 @@ export default function AppHeader() {
     (suggestedVenues || []).forEach(venue => {
       if (!venue) return;
 
-      // Tüm alanları string'e zorlayarak koruma altına alıyoruz
-      const venueName = String(venue.name || "").toLowerCase();
-      const venueCategory = String(venue.category || "").toLowerCase();
+      const venueName = String(venue.name || "");
+      const venueCategory = String(venue.category || "");
       
       const catLabel = toTurkishCategory(venue.category);
       const turkishCatLabel = typeof catLabel === "string" ? catLabel : "Mekan";
@@ -138,36 +148,33 @@ export default function AppHeader() {
       let isMatched = false;
       let tagText = turkishCatLabel;
 
-      // 1. Mekan Adında Eşleşme Kontrolü
-      if (venueName.includes(query)) {
+      // 1. Mekan Adı En Baştan mı Başlıyor? (Örn: "kö" -> "Köfteci...")
+      if (checkStrictStartsWith(venueName, query)) {
         isMatched = true;
         tagText = turkishCatLabel;
       } 
-      // 2. Kategoride Eşleşme Kontrolü
-      else if (venueCategory.includes(query) || turkishCatLabel.toLowerCase().includes(query)) {
+      // 2. Kategori En Baştan mı Başlıyor?
+      else if (checkStrictStartsWith(venueCategory, query) || checkStrictStartsWith(turkishCatLabel, query)) {
         isMatched = true;
         tagText = turkishCatLabel;
       }
-      // 3. Menü Öğelerinde Eşleşme Kontrolü (Kurşun Geçirmez Döngü)
+      // 3. Menü Öğeleri En Baştan mı Başlıyor? (Örn: "kö" -> "Köfte")
       else if (venue.menu && Array.isArray(venue.menu)) {
         for (let i = 0; i < venue.menu.length; i++) {
           const item = venue.menu[i];
           if (!item) continue;
           
-          // Eğer menü elemanı bir nesneyse item.name'e bak, düz string ise direkt kendisini al
           const itemNameRaw = typeof item === "object" ? (item.name || item.text) : item;
-          const itemName = String(itemNameRaw || "").toLowerCase();
+          const itemName = String(itemNameRaw || "");
 
-          if (itemName.includes(query)) {
+          if (checkStrictStartsWith(itemName, query)) {
             isMatched = true;
-            // Ekranda nesne basılmasını önlemek için string'e zorluyoruz
             tagText = `Menü: ${String(itemNameRaw || "Ürün")}`;
-            break; // İlk eşleşen yemeği bulduğumuzda döngüden çık
+            break; 
           }
         }
       }
 
-      // Eğer eşleştiyse ve tagText bir nesne değilse listeye güvenle ekle
       if (isMatched && typeof tagText === "string") {
         results.push({
           id: venue._id || venue.id || `safe-id-${Math.random()}`,
@@ -183,7 +190,7 @@ export default function AppHeader() {
 
   const matchedCategories = (searchDraft || "").trim()
     ? (SEARCH_CATEGORY_OPTIONS || []).filter(opt =>
-        String(opt?.label || "").toLowerCase().includes(searchDraft.toLowerCase())
+        checkStrictStartsWith(String(opt?.label || ""), searchDraft)
       )
     : [];
 
@@ -297,7 +304,7 @@ export default function AppHeader() {
             {/* Akıllı Etiketli Mekanlar */}
             {processedSuggestions.length === 0 && matchedCategories.length === 0 ? (
               <div className="px-3 py-4 text-center text-xs text-slate-400">
-                "{searchDraft}" ile eşleşen bir mekan veya menü bulunamadı.
+                "{searchDraft}" ile başlayan bir mekan veya menü bulunamadı.
               </div>
             ) : (
               <div className="flex flex-col gap-0.5">
