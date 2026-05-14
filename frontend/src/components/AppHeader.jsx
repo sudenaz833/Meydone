@@ -27,10 +27,10 @@ export default function AppHeader() {
 
   // 1. Canlı Arama İstek Yönetimi ve Arka Plan Sayfayı Canlı Güncelleme
   useEffect(() => {
+    if (!loggedIn) return;
+
     const query = searchDraft.trim();
     
-    // --- CEREN'İN İSTEDİĞİ CANLI ARKA PLAN GÜNCELLEMESİ ---
-    // Eğer kullanıcı mekanlar listeleme sayfasındaysa, Enter beklemeden URL'i canlı güncelliyoruz
     if (location.pathname === appRoutes.venues) {
       if (query) {
         navigate({ pathname: appRoutes.venues, search: `?q=${encodeURIComponent(query)}` }, { replace: true });
@@ -56,57 +56,90 @@ export default function AppHeader() {
     }, 250);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchDraft, location.pathname, navigate]);
+  }, [searchDraft, location.pathname, navigate, loggedIn]);
 
-  // Sayfaya dışarıdan url ile q parametresi gelirse kutunun içini doldur
   useEffect(() => {
+    if (!loggedIn) return;
     const qParam = searchParams.get("q") ?? "";
     if (qParam && searchDraft !== qParam) {
       setSearchDraft(qParam);
     }
-  }, [searchParams]);
+  }, [searchParams, loggedIn, searchDraft]);
 
-  // 2. Bildirim Çekme Fonksiyonu
-  const fetchLikeNotifications = useCallback(async () => {
+  // --- CEREN'İN İSTEDİĞİ BİRLEŞTİRİLMİŞ BİLDİRİM ÇEKME MANTIĞI ---
+  const fetchAllNotifications = useCallback(async () => {
     if (!loggedIn) return;
     try {
-      const response = await api.get("/notifications/comment-likes");
-      const rawItems = response.data?.data?.items || [];
-      
-      const formattedNotifications = rawItems.map(item => {
-        const firstLiker = item.likers && item.likers[0];
-        const username = firstLiker?.username || firstLiker?.name || "Bir kullanıcı";
-        const commentText = item.commentPreview || "senin";
+      // Hem yorum beğenilerini hem de arkadaşlık isteklerini paralel olarak çekiyoruz
+      const [likesResponse, friendsResponse] = await Promise.all([
+        api.get("/notifications/comment-likes").catch(() => null),
+        api.get("/friends/requests").catch(() => null) // Arkadaşlık istekleri endpoint'i
+      ]);
 
-        return {
-          id: item.commentId || Math.random().toString(),
-          senderName: username,
-          text: `"${commentText}" yorumunu beğendi.`, 
-          createdAt: item.updatedAt || new Date()
-        };
-      });
+      const allCombined = [];
 
-      formattedNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      // 1. Yorum Beğeni Bildirimlerini İşle
+      const rawLikes = likesResponse?.data?.data?.items || likesResponse?.data?.items || [];
+      if (Array.isArray(rawLikes)) {
+        rawLikes.forEach(item => {
+          if (!item) return;
+          const firstLiker = item.likers && item.likers[0];
+          const username = firstLiker?.username || firstLiker?.name || "Bir kullanıcı";
+          const commentText = item.commentPreview || "senin";
+
+          allCombined.push({
+            id: `like-${item.commentId || Math.random()}`,
+            senderName: username,
+            text: `"${commentText}" yorumunu beğendi.`,
+            icon: "❤️",
+            createdAt: item.updatedAt || new Date()
+          });
+        });
+      }
+
+      // 2. Arkadaşlık İstekleri Bildirimlerini İşle
+      const rawFriends = friendsResponse?.data?.data?.items || friendsResponse?.data?.items || [];
+      if (Array.isArray(rawFriends)) {
+        rawFriends.forEach(item => {
+          if (!item) return;
+          // Gönderen kişinin adı backend yapısına göre sender veya user içinde olabilir, korumaya alıyoruz
+          const senderInfo = item.sender || item.user || item;
+          const username = senderInfo?.username || senderInfo?.name || "Bir kullanıcı";
+
+          allCombined.push({
+            id: `friend-${item._id || item.id || Math.random()}`,
+            senderName: username,
+            text: `sana arkadaşlık isteği gönderdi.`,
+            icon: "👥",
+            createdAt: item.createdAt || new Date()
+          });
+        });
+      }
+
+      // Tüm bildirimleri tarihlerine göre en yeni en üstte olacak şekilde sırala
+      allCombined.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       
-      if (formattedNotifications.length > notifications.length && !showNotifications) {
+      // Eğer yeni bir bildirim geldiyse ve çan kapalıysa kırmızı unread balonunu yak
+      if (allCombined.length > notifications.length && !showNotifications) {
         setHasUnread(true);
       }
       
-      setNotifications(formattedNotifications);
+      setNotifications(allCombined);
     } catch (err) {
-      console.error("Yorum beğenileri çekilirken hata:", err);
+      console.error("Bildirimler birleştirilirken hata oluştu:", err);
     }
   }, [loggedIn, notifications.length, showNotifications]);
 
+  // Polling Yapısı: Her 5 saniyede bir iki bildirimi de canlı canlı kontrol eder
   useEffect(() => {
     if (loggedIn) {
-      fetchLikeNotifications();
+      fetchAllNotifications();
       const interval = setInterval(() => {
-        fetchLikeNotifications();
+        fetchAllNotifications();
       }, 5000); 
       return () => clearInterval(interval);
     }
-  }, [loggedIn, fetchLikeNotifications]);
+  }, [loggedIn, fetchAllNotifications]);
 
   const handleNotifClick = () => {
     const nextShowState = !showNotifications;
@@ -137,7 +170,6 @@ export default function AppHeader() {
     setShowSuggestions(false);
   };
 
-  // 1. KURAL: SAF BAŞLANGIÇ KONTROLÜ (Mekan ve Kategori için)
   const checkStrictStartsWith = (sourceText, queryText) => {
     const source = String(sourceText || "").trim().toLowerCase();
     const query = String(queryText || "").trim().toLowerCase();
@@ -145,7 +177,6 @@ export default function AppHeader() {
     return source.startsWith(query);
   };
 
-  // 2. KURAL: KELİME BAŞLANGICI KONTROLÜ (Menü öğeleri için)
   const checkWordStartsWith = (sourceText, queryText) => {
     const source = String(sourceText || "").trim().toLowerCase();
     const query = String(queryText || "").trim().toLowerCase();
@@ -155,8 +186,8 @@ export default function AppHeader() {
     return words.some(word => word.startsWith(query));
   };
 
-  // 3. SEÇİCİ AKILLI FİLTRELEME MANTIĞI
   const processedSuggestions = useMemo(() => {
+    if (!loggedIn) return [];
     const query = (searchDraft || "").trim().toLowerCase();
     if (!query) return [];
 
@@ -209,13 +240,16 @@ export default function AppHeader() {
     });
 
     return results;
-  }, [searchDraft, suggestedVenues]);
+  }, [searchDraft, suggestedVenues, loggedIn]);
 
-  const matchedCategories = (searchDraft || "").trim()
-    ? (SEARCH_CATEGORY_OPTIONS || []).filter(opt =>
-        checkStrictStartsWith(String(opt?.label || ""), searchDraft)
-      )
-    : [];
+  const matchedCategories = useMemo(() => {
+    if (!loggedIn) return [];
+    return (searchDraft || "").trim()
+      ? (SEARCH_CATEGORY_OPTIONS || []).filter(opt =>
+          checkStrictStartsWith(String(opt?.label || ""), searchDraft)
+        )
+      : [];
+  }, [searchDraft, loggedIn]);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-100 pt-[env(safe-area-inset-top)]">
@@ -256,9 +290,11 @@ export default function AppHeader() {
                       {notifications.map((notif) => (
                         <li key={notif.id} className="px-4 py-3 hover:bg-slate-50 transition flex flex-col gap-0.5">
                           <div className="text-xs text-slate-700 leading-relaxed">
+                            {/* Ceren Bak: İkon ekledik, ❤️ beğeni için, 👥 arkadaşlık için çıkacak */}
+                            <span className="mr-1.5">{notif.icon}</span>
                             <span className="font-bold text-slate-900">@{notif.senderName}</span> {notif.text}
                           </div>
-                          <span className="text-[9px] text-slate-400">{new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span className="text-[9px] text-slate-400 pl-6">{new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                         </li>
                       ))}
                     </ul>
@@ -267,93 +303,98 @@ export default function AppHeader() {
               )}
             </div>
           )}
-          <Link to={appRoutes.profile} className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-700 font-bold text-sm overflow-hidden">S</Link>
+          
+          {loggedIn ? (
+            <Link to={appRoutes.profile} className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-700 font-bold text-sm overflow-hidden">S</Link>
+          ) : (
+            <Link to={appRoutes.login} className="text-sm font-semibold text-rose-500 hover:text-rose-600 px-3 py-1.5 rounded-xl bg-rose-50 transition">Giriş Yap</Link>
+          )}
         </div>
       </div>
 
       {/* Arama Barı */}
-      <div className="px-4 pb-3 relative" ref={searchWrapRef}>
-        <form onSubmit={onSearchSubmit} className="relative flex items-center gap-2">
-          <div className="relative flex-grow">
-            <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input
-              type="search"
-              placeholder="Mekan veya menü ara..."
-              value={searchDraft}
-              onChange={(e) => {
-                setSearchDraft(e.target.value);
-                setShowSuggestions(true);
-              }}
-              onFocus={() => setShowSuggestions(true)}
-              className="w-full bg-slate-100 text-slate-900 border-none rounded-xl py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-            />
-          </div>
-          
-          <select 
-            onChange={(e) => navigate(`${appRoutes.venues}?cat=${e.target.value}`)}
-            className="bg-slate-100 border-none rounded-xl py-2 px-2 text-xs font-medium text-slate-600 outline-none"
-          >
-            <option value="">Filtre</option>
-            {SEARCH_CATEGORY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-          </select>
-        </form>
-
-        {/* Öneri Listesi Dropdown */}
-        {showSuggestions && (searchDraft || "").trim().length > 0 && (
-          <div className="absolute left-4 right-4 top-12 bg-white rounded-2xl shadow-xl border border-slate-100 mt-1 p-2 z-50 max-h-72 overflow-y-auto">
-            <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-50 mb-1">
-              Arama Sonuçları
+      {loggedIn && (
+        <div className="px-4 pb-3 relative" ref={searchWrapRef}>
+          <form onSubmit={onSearchSubmit} className="relative flex items-center gap-2">
+            <div className="relative flex-grow">
+              <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <input
+                type="search"
+                placeholder="Mekan veya menü ara..."
+                value={searchDraft}
+                onChange={(e) => {
+                  setSearchDraft(e.target.value);
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                className="w-full bg-slate-100 text-slate-900 border-none rounded-xl py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
+              />
             </div>
             
-            {/* Kategoriler */}
-            {matchedCategories.length > 0 && (
-              <div className="mb-2">
-                {matchedCategories.map(cat => (
-                  <button
-                    key={cat.value}
-                    onClick={() => {
-                      setSearchDraft("");
-                      setShowSuggestions(false);
-                      navigate(`${appRoutes.venues}?cat=${cat.value}`);
-                    }}
-                    className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 rounded-xl transition flex items-center gap-2"
-                  >
-                    🍴 <span className="font-medium text-slate-900">{cat.label}</span> filtresini uygula
-                  </button>
-                ))}
-              </div>
-            )}
+            <select 
+              onChange={(e) => navigate(`${appRoutes.venues}?cat=${e.target.value}`)}
+              className="bg-slate-100 border-none rounded-xl py-2 px-2 text-xs font-medium text-slate-600 outline-none"
+            >
+              <option value="">Filtre</option>
+              {SEARCH_CATEGORY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+          </form>
 
-            {/* Akıllı Etiketli Mekanlar */}
-            {processedSuggestions.length === 0 && matchedCategories.length === 0 ? (
-              <div className="px-3 py-4 text-center text-xs text-slate-400">
-                "{searchDraft}" ile başlayan bir mekan veya menü bulunamadı.
+          {/* Öneri Listesi Dropdown */}
+          {showSuggestions && (searchDraft || "").trim().length > 0 && (
+            <div className="absolute left-4 right-4 top-12 bg-white rounded-2xl shadow-xl border border-slate-100 mt-1 p-2 z-50 max-h-72 overflow-y-auto">
+              <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-50 mb-1">
+                Arama Sonuçları
               </div>
-            ) : (
-              <div className="flex flex-col gap-0.5">
-                {processedSuggestions.map(item => (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setSearchDraft("");
-                      setShowSuggestions(false);
-                      navigate(`${appRoutes.venues}?q=${encodeURIComponent(item.rawVenueName || '')}`);
-                    }}
-                    className="w-full text-left px-3 py-2.5 text-xs text-slate-700 hover:bg-slate-50 rounded-xl transition flex items-center justify-between gap-4"
-                  >
-                    <span className="font-semibold text-slate-900 flex items-center gap-1.5 truncate">
-                      📍 {item.name}
-                    </span>
-                    <span className="text-[10px] font-medium bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full whitespace-nowrap shadow-sm border border-slate-200/40">
-                      {item.tag}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+              
+              {matchedCategories.length > 0 && (
+                <div className="mb-2">
+                  {matchedCategories.map(cat => (
+                    <button
+                      key={cat.value}
+                      onClick={() => {
+                        setSearchDraft("");
+                        setShowSuggestions(false);
+                        navigate(`${appRoutes.venues}?cat=${cat.value}`);
+                      }}
+                      className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 rounded-xl transition flex items-center gap-2"
+                    >
+                      🍴 <span className="font-medium text-slate-900">{cat.label}</span> filtresini uygula
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {processedSuggestions.length === 0 && matchedCategories.length === 0 ? (
+                <div className="px-3 py-4 text-center text-xs text-slate-400">
+                  "{searchDraft}" ile başlayan bir mekan veya menü bulunamadı.
+                </div>
+              ) : (
+                <div className="flex flex-col gap-0.5">
+                  {processedSuggestions.map(item => (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setSearchDraft("");
+                        setShowSuggestions(false);
+                        navigate(`${appRoutes.venues}?q=${encodeURIComponent(item.rawVenueName || '')}`);
+                      }}
+                      className="w-full text-left px-3 py-2.5 text-xs text-slate-700 hover:bg-slate-50 rounded-xl transition flex items-center justify-between gap-4"
+                    >
+                      <span className="font-semibold text-slate-900 flex items-center gap-1.5 truncate">
+                        📍 {item.name}
+                      </span>
+                      <span className="text-[10px] font-medium bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full whitespace-nowrap shadow-sm border border-slate-200/40">
+                        {item.tag}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </header>
   );
 }
