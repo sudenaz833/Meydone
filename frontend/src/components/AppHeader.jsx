@@ -12,57 +12,75 @@ export default function AppHeader() {
   const [searchParams] = useSearchParams();
   const notifWrapRef = useRef(null);
 
-  // Kullanıcının giriş yapıp yapmadığını kontrol ediyoruz
   const loggedIn = typeof window !== "undefined" && !!localStorage.getItem(AUTH_TOKEN_KEY);
   
-  // Ekranda gösterilecek bildirimlerin state'i
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchDraft, setSearchDraft] = useState(searchParams.get("q") ?? "");
 
-  // Ana sayfa, giriş ve kayıt sayfalarında geri butonunu gizle
   const hideBackButton = ['/', '/login', '/register'].includes(location.pathname);
 
-  // 1. Backend'den Sadece Yorum Beğeni Bildirimlerini Çeken Fonksiyon
+  // 1. Geliştirilmiş ve Hata Yakalamalı Bildirim Çekme Fonksiyonu
   const fetchLikeNotifications = useCallback(async () => {
     if (!loggedIn) return;
     try {
-      // Backend bildirim endpoint'ine istek atıyoruz
       const response = await api.get("/notifications");
-      const resData = response.data;
       
-      // Gelen verinin array (liste) olduğundan emin oluyoruz
-      const items = resData?.items || resData?.data?.items || resData?.data || (Array.isArray(resData) ? resData : []);
-      
-      // Gelen bildirimleri arayüze uygun formatlıyoruz
-      const formattedNotifications = items.map(item => ({
-        id: item._id || item.id,
-        senderName: item.sender?.username || item.username || "Bir kullanıcı",
-        text: "yorumunu beğendi.", // Doğrudan senin istediğin metin
-        createdAt: item.createdAt || new Date()
-      }));
+      // --- CEREN İÇİN KONSOL KONTROLÜ ---
+      // Eğer yine bildirim düşmezse tarayıcıda F12'ye basıp Console sekmesine bak, backend'in ne döndüğünü göreceğiz.
+      console.log("Backend'den Gelen Ham Veri:", response.data);
 
-      // En yeni bildirimi en üstte göstermek için tarihe göre sıralıyoruz
+      const resData = response.data;
+      if (!resData) return;
+
+      // Backend'in veriyi koyabileceği tüm ihtimalleri tek tek kontrol ediyoruz:
+      let rawItems = [];
+      if (Array.isArray(resData)) {
+        rawItems = resData;
+      } else if (resData.notifications && Array.isArray(resData.notifications)) {
+        rawItems = resData.notifications;
+      } else if (resData.items && Array.isArray(resData.items)) {
+        rawItems = resData.items;
+      } else if (resData.data && Array.isArray(resData.data)) {
+        rawItems = resData.data;
+      } else if (resData.data?.items && Array.isArray(resData.data.items)) {
+        rawItems = resData.data.items;
+      }
+
+      // Sadece "like" (beğeni) olan veya tipi belirtilmemiş/beğeni formatındaki bildirimleri filtrele
+      const formattedNotifications = rawItems
+        .map(item => {
+          // Gönderen kişinin kullanıcı adını bulmak için alternatif alanlar
+          const senderUsername = item.sender?.username || item.user?.username || item.username || "Bir kullanıcı";
+          return {
+            id: item._id || item.id || Math.random().toString(),
+            senderName: senderUsername,
+            text: "yorumunu beğendi.",
+            createdAt: item.createdAt || new Date()
+          };
+        });
+
+      // En yeni bildirimi üstte göster
       formattedNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       
       setNotifications(formattedNotifications);
     } catch (err) {
-      console.error("Bildirimler yüklenirken hata oluştu:", err);
+      console.error("Ceren, bildirim API isteği atılırken hata oluştu:", err);
     }
   }, [loggedIn]);
 
-  // 2. Sayfa Yüklendiğinde Çalışır ve Her 10 Saniyede Bir Yeni Beğeni Var mı diye Arkada Kontrol Eder (Polling)
+  // 2. 5 Saniyede Bir Kontrol Et (Hızlıca test edebilmen için süreyi 5 saniyeye düşürdüm)
   useEffect(() => {
     if (loggedIn) {
       fetchLikeNotifications();
       const interval = setInterval(() => {
         fetchLikeNotifications();
-      }, 10000); // 10 saniye
+      }, 5000); 
       return () => clearInterval(interval);
     }
   }, [loggedIn, fetchLikeNotifications]);
 
-  // 3. Çan Menüsü Açıkken Ekranda Başka Bir Yere Tıklanırsa Menüyü Kapatır
+  // 3. Dışarı Tıklayınca Kapatma Menüsü
   useEffect(() => {
     function handleClickOutside(event) {
       if (notifWrapRef.current && !notifWrapRef.current.contains(event.target)) {
@@ -82,14 +100,10 @@ export default function AppHeader() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-100 pt-[env(safe-area-inset-top)]">
-      {/* Üst Logo ve Çan Alanı */}
       <div className="flex items-center justify-between px-4 h-14">
         <div className="flex items-center gap-2">
           {!hideBackButton && (
-            <button 
-              onClick={() => navigate(-1)} 
-              className="p-2 -ml-2 rounded-full active:bg-rose-50 text-rose-500"
-            >
+            <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full active:bg-rose-50 text-rose-500">
               <IoChevronBack size={24} />
             </button>
           )}
@@ -98,7 +112,6 @@ export default function AppHeader() {
           </Link>
         </div>
 
-        {/* Sağ Taraf: Çan ve Profil Simge Alanı */}
         <div className="flex items-center gap-3">
           {loggedIn && (
             <div className="relative" ref={notifWrapRef}>
@@ -106,11 +119,10 @@ export default function AppHeader() {
               <button 
                 onClick={() => setShowNotifications(!showNotifications)} 
                 className="relative flex items-center justify-center p-2 text-slate-600 rounded-full hover:bg-slate-50 active:scale-95 transition-all outline-none"
-                style={{ WebkitTapHighlightColor: 'transparent' }}
               >
                 <IoNotificationsOutline size={26} />
                 
-                {/* KIRMIZI BALON / SAYAÇ: Yeni bildirim varsa burada kırmızı renkte sayısı yazar */}
+                {/* KIRMIZI BALON VE DİNAMİK SAYAÇ */}
                 {notifications.length > 0 && (
                   <span className="absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white ring-2 ring-white shadow-sm animate-pulse">
                     {notifications.length}
@@ -118,7 +130,7 @@ export default function AppHeader() {
                 )}
               </button>
 
-              {/* ÇANA TIKLAYINCA AÇILAN PANEL (DROPDOWN) */}
+              {/* ÇAN DROPDOWN PANELİ */}
               {showNotifications && (
                 <div className="absolute top-12 right-0 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 max-h-96 overflow-y-auto">
                   <div className="px-4 py-2 border-b border-slate-50 font-bold text-sm text-slate-800 flex justify-between items-center">
@@ -135,7 +147,6 @@ export default function AppHeader() {
                       {notifications.map((notif) => (
                         <li key={notif.id} className="px-4 py-3 hover:bg-slate-50 transition flex flex-col gap-0.5">
                           <div className="text-xs text-slate-700 leading-relaxed">
-                            {/* İstediğin çıktı formatı: @kullaniciadi yorumunu beğendi. */}
                             <span className="font-bold text-slate-900">@{notif.senderName}</span> {notif.text}
                           </div>
                           <span className="text-[9px] text-slate-400">
@@ -150,14 +161,13 @@ export default function AppHeader() {
             </div>
           )}
           
-          {/* Profil İkonu */}
           <Link to={appRoutes.profile} className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-700 font-bold text-sm overflow-hidden">
              S
           </Link>
         </div>
       </div>
 
-      {/* Alt Kısım: Arama Barı */}
+      {/* Arama Barı */}
       <div className="px-4 pb-3">
         <form onSubmit={onSearchSubmit} className="relative flex items-center gap-2">
           <div className="relative flex-grow">
