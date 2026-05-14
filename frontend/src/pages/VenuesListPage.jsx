@@ -21,7 +21,8 @@ const ISTANBUL_RADIUS_KM = 35;
 const MAX_DISPLAY_VENUES = 24;
 
 function normalizeVenueList(payload) {
-  const items = payload?.data?.items;
+  // Hem payload.data.items hem de direkt payload.items ihtimalini sağlama alıyoruz
+  const items = payload?.data?.items || payload?.items;
   return Array.isArray(items) ? items : [];
 }
 
@@ -62,6 +63,7 @@ function haversineKm(a, b) {
 }
 
 function isCuratedVenue(venue) {
+  if (!venue) return false;
   const city = String(venue?.address?.city ?? "")
     .trim()
     .toLocaleLowerCase("tr-TR");
@@ -106,7 +108,7 @@ export default function VenuesListPage() {
       .get("/auth/me")
       .then((res) => {
         if (!active) return;
-        setCurrentUser(res.data?.data?.user ?? null);
+        setCurrentUser(res.data?.data?.user || res.data?.user || null);
       })
       .catch(() => {
         if (active) setCurrentUser(null);
@@ -142,9 +144,12 @@ export default function VenuesListPage() {
           items = normalizeVenueList(data);
           if (hasTextQ) {
             items = items.filter((v) => {
+              if (!v) return false;
               const q = String(nameQ ?? "").trim().toLocaleLowerCase("tr-TR");
               if (!q) return true;
-              const categoryKey = normalizeCategoryKey(v?.category);
+              
+              // Kategori koruması eklendi (undefined hatasını önler)
+              const categoryKey = normalizeCategoryKey(v?.category || "");
               const categoryQueryKey = normalizeCategoryKey(q);
               return (
                 venueMatchesNameOrMenu(v, q) ||
@@ -153,23 +158,25 @@ export default function VenuesListPage() {
             });
           }
           if (hasCatQ) {
-            items = items.filter((v) => venueMatchesCategoryParam(v?.category, categoryParam));
+            items = items.filter((v) => v && venueMatchesCategoryParam(v?.category || "", categoryParam));
           }
         } else {
           const { data } = await api.get("/venues");
           items = normalizeVenueList(data);
         }
 
+        // --- CEREN BURAYA DİKKAT: KURŞUN GEÇİRMEZ OWNER KORUMASI ---
         if (currentUser?.role === "owner" || currentUser?.role === "admin") {
           const ownerId = String(currentUser?._id ?? currentUser?.id ?? "");
           items = items.filter((v) => {
+            if (!v) return false;
+            // v.owner nesnesi yoksa veya id'si boşsa güvenli string'e çeviriyoruz, çökme önleniyor
             const venueOwner = String(v?.owner?._id ?? v?.owner ?? "");
             return Boolean(ownerId && venueOwner && venueOwner === ownerId);
           });
         } else {
           items = items.filter(isCuratedVenue);
 
-          // İstanbul'dan birkaç örnek gösterirken listeyi üst sınırlıyoruz.
           const isIstanbulCity = (v) =>
             String(v?.address?.city ?? "")
               .trim()
@@ -237,7 +244,7 @@ export default function VenuesListPage() {
     <div className="relative flex min-h-[calc(100vh-14rem)] flex-col gap-8 sm:gap-10">
       <div
         className="pointer-events-none absolute -inset-x-4 -top-2 bottom-0 -z-0 rounded-[2rem] bg-gradient-to-br from-rose-100/40 via-violet-100/30 to-amber-50/50 sm:-inset-x-6"
-        aria-hidden
+        aria-hidden="true"
       />
 
       <div className="relative z-10 flex flex-col gap-8 sm:gap-10">
