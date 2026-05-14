@@ -15,7 +15,7 @@ export default function AppHeader() {
 
   const loggedIn = typeof window !== "undefined" && !!localStorage.getItem(AUTH_TOKEN_KEY);
   
-  const [currentUser, setCurrentUser] = useState(null); // Canlı kullanıcı bilgisini tutacak state
+  const [currentUser, setCurrentUser] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchDraft, setSearchDraft] = useState(searchParams.get("q") ?? "");
@@ -71,14 +71,12 @@ export default function AppHeader() {
   const fetchAllData = useCallback(async () => {
     if (!loggedIn) return;
     try {
-      // --- CEREN İÇİN KULLANICI BİLGİSİNİ DE PARALELDE ÇEKİYORUZ ---
       const [likesResponse, friendsPendingResponse, meResponse] = await Promise.all([
         api.get("/notifications/comment-likes").catch(() => null),
         api.get("/friends/pending").catch(() => null),
-        api.get("/auth/me").catch(() => null) // Profil resmi ve isim kontrolü için
+        api.get("/auth/me").catch(() => null)
       ]);
 
-      // Kullanıcı verisini güncelle
       const userData = meResponse?.data?.data?.user || meResponse?.data?.user;
       if (userData) {
         setCurrentUser(userData);
@@ -145,7 +143,6 @@ export default function AppHeader() {
     }
   }, [loggedIn, fetchAllData]);
 
-  // Profil sayfasında fotoğraf değiştirilirse üst bar anında güncellensin diye event listener ekledik
   useEffect(() => {
     const handleProfileUpdateEvent = (e) => {
       if (e.detail) {
@@ -208,7 +205,9 @@ export default function AppHeader() {
 
     const results = [];
 
-    (suggestedVenues || []).forEach(venue => {
+    const safeVenues = Array.isArray(suggestedVenues) ? suggestedVenues : [];
+
+    safeVenues.forEach(venue => {
       if (!venue) return;
 
       const venueName = String(venue.name || "");
@@ -257,16 +256,18 @@ export default function AppHeader() {
     return results;
   }, [searchDraft, suggestedVenues, loggedIn]);
 
+  // --- CEREN İŞTE BURAYI %100 ÇÖKMEYECEK ŞEKİLDE DÜZELTTİK ---
   const matchedCategories = useMemo(() => {
-    if (!loggedIn) return [];
-    return (searchDraft || "").trim()
-      ? (SEARCH_CATEGORY_OPTIONS || []).filter(opt =>
-          checkStrictStartsWith(String(opt?.label || ""), searchDraft)
-        )
-      : [];
+    if (!loggedIn) return []; // Giriş yapmadıysa güvenle boş dizi dönecek, çökmeyecek
+    const draft = (searchDraft || "").trim();
+    if (!draft) return [];
+
+    const safeOptions = Array.isArray(SEARCH_CATEGORY_OPTIONS) ? SEARCH_CATEGORY_OPTIONS : [];
+    return safeOptions.filter(opt =>
+      checkStrictStartsWith(String(opt?.label || ""), draft)
+    );
   }, [searchDraft, loggedIn]);
 
-  // --- DİNAMİK HARF VE FOTOĞRAF KONTROLÜ ---
   const renderProfileButton = useMemo(() => {
     if (!loggedIn) {
       return (
@@ -276,7 +277,6 @@ export default function AppHeader() {
       );
     }
 
-    // Eğer kullanıcının profil fotoğrafı varsa direkt fotoğrafı bas
     if (currentUser?.profilePhoto) {
       return (
         <Link to={appRoutes.profile} className="w-8 h-8 rounded-full border border-rose-100 shadow-sm overflow-hidden block">
@@ -285,7 +285,6 @@ export default function AppHeader() {
       );
     }
 
-    // Eğer fotoğrafı yoksa adının veya kullanıcı adının baş harfini al (Varsayılan 'M' yedeklemesi)
     const initialLetter = (currentUser?.name || currentUser?.username || "M").slice(0, 1).toUpperCase();
 
     return (
@@ -294,6 +293,9 @@ export default function AppHeader() {
       </Link>
     );
   }, [loggedIn, currentUser]);
+
+  const safeMatchedCategories = Array.isArray(matchedCategories) ? matchedCategories : [];
+  const safeProcessedSuggestions = Array.isArray(processedSuggestions) ? processedSuggestions : [];
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-100 pt-[env(safe-area-inset-top)]">
@@ -347,7 +349,6 @@ export default function AppHeader() {
             </div>
           )}
           
-          {/* Dinamik render edilen profil alanı */}
           {renderProfileButton}
         </div>
       </div>
@@ -387,9 +388,9 @@ export default function AppHeader() {
                 Arama Sonuçları
               </div>
               
-              {matchedCategories.length > 0 && (
+              {safeMatchedCategories.length > 0 && (
                 <div className="mb-2">
-                  {matchedCategories.map(cat => (
+                  {safeMatchedCategories.map(cat => (
                     <button
                       key={cat.value}
                       onClick={() => {
@@ -405,13 +406,13 @@ export default function AppHeader() {
                 </div>
               )}
 
-              {processedSuggestions.length === 0 && matchedCategories.length === 0 ? (
+              {safeProcessedSuggestions.length === 0 && safeMatchedCategories.length === 0 ? (
                 <div className="px-3 py-4 text-center text-xs text-slate-400">
                   "{searchDraft}" ile başlayan bir mekan veya menü bulunamadı.
                 </div>
               ) : (
                 <div className="flex flex-col gap-0.5">
-                  {processedSuggestions.map(item => (
+                  {safeProcessedSuggestions.map(item => (
                     <button
                       key={item.id}
                       onClick={() => {
