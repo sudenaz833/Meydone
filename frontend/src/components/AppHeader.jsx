@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../services/api";
 import { SEARCH_CATEGORY_OPTIONS } from "../utils/category";
@@ -11,19 +11,39 @@ export default function AppHeader() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const notifWrapRef = useRef(null);
+  const searchWrapRef = useRef(null); // Arama alanının dışına tıklanınca kapatmak için
 
   const loggedIn = typeof window !== "undefined" && !!localStorage.getItem(AUTH_TOKEN_KEY);
   
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchDraft, setSearchDraft] = useState(searchParams.get("q") ?? "");
-  
-  // Bildirimin okunup okunmadığını kontrol eden state
   const [hasUnread, setHasUnread] = useState(false);
+
+  // Canlı öneriler (Suggestions) için state'ler
+  const [allVenues, setAllVenues] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const hideBackButton = ['/', '/login', '/register'].includes(location.pathname);
 
-  // 1. Bildirimleri Çekme Fonksiyonu
+  // 1. Önerilerde Kullanmak Üzere Tüm Mekanları Backend'den Çekme
+  useEffect(() => {
+    async function fetchVenuesForSuggestions() {
+      try {
+        const response = await api.get("/venues");
+        // Backend'in veri yapısına göre array'i yakalıyoruz
+        const venuesData = response.data?.data?.items || response.data?.items || response.data || [];
+        setAllVenues(venuesData);
+      } catch (err) {
+        console.error("Öneriler için mekan listesi çekilemedi:", err);
+      }
+    }
+    if (loggedIn) {
+      fetchVenuesForSuggestions();
+    }
+  }, [loggedIn]);
+
+  // 2. Bildirimleri Çekme Fonksiyonu
   const fetchLikeNotifications = useCallback(async () => {
     if (!loggedIn) return;
     try {
@@ -45,7 +65,6 @@ export default function AppHeader() {
 
       formattedNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       
-      // Eğer yeni gelen bildirim sayısı, şu anki listeden farklıysa yeni bildirim var demektir
       if (formattedNotifications.length > notifications.length && !showNotifications) {
         setHasUnread(true);
       }
@@ -56,7 +75,7 @@ export default function AppHeader() {
     }
   }, [loggedIn, notifications.length, showNotifications]);
 
-  // 2. 5 Saniyede Bir Polling Yapısı
+  // 3. Polling Yapısı (5 Saniyede Bir)
   useEffect(() => {
     if (loggedIn) {
       fetchLikeNotifications();
@@ -67,33 +86,56 @@ export default function AppHeader() {
     }
   }, [loggedIn, fetchLikeNotifications]);
 
-  // 3. ÇAN SİMGESİNE TIKLANDIĞINDA ÇALIŞAN FONKSİYON
+  // 4. Çan Tıklama Fonksiyonu
   const handleNotifClick = () => {
     const nextShowState = !showNotifications;
     setShowNotifications(nextShowState);
-    
-    // Çan kutusu açıldığı an kırmızı bildirim balonunu söndür/kaldır
     if (nextShowState) {
       setHasUnread(false);
     }
   };
 
-  // 4. Dışarı Tıklayınca Dropdown Kapatma
+  // 5. Dışarı Tıklayınca Pencereleri Kapatma Kontrolü
   useEffect(() => {
     function handleClickOutside(event) {
       if (notifWrapRef.current && !notifWrapRef.current.contains(event.target)) {
         setShowNotifications(false);
+      }
+      if (searchWrapRef.current && !searchWrapRef.current.contains(event.target)) {
+        setShowSuggestions(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // 6. DİNAMİK FİLTRELEME MANTIĞI (Yazılan harfe göre süzme yapar)
+  const filteredSuggestions = useMemo(() => {
+    const query = searchDraft.trim().toLowerCase();
+    if (!query) return { categories: [], venues: [] };
+
+    // A. Menü/Kategori Seçeneklerinden Eşleşenler (Örn: "k" -> Kebap, Kahve)
+    const matchedCategories = SEARCH_CATEGORY_OPTIONS.filter(opt =>
+      opt.label.toLowerCase().includes(query)
+    );
+
+    // B. Mekan İsimlerinden Eşleşenler (Örn: "k" -> Köfteci Yusuf, Karaköy Güllüoğlu vb.)
+    const matchedVenues = allVenues.filter(venue =>
+      venue.name?.toLowerCase().includes(query)
+    );
+
+    return {
+      categories: matchedCategories,
+      venues: matchedVenues
+    };
+  }, [searchDraft, allVenues]);
+
   const onSearchSubmit = (e) => {
     e.preventDefault();
     if (!loggedIn) { navigate(appRoutes.login); return; }
     const trimmed = searchDraft.trim();
     navigate({ pathname: appRoutes.venues, search: trimmed ? `?q=${trimmed}` : "" });
+    setShowSuggestions(false);
   };
 
   return (
@@ -113,14 +155,8 @@ export default function AppHeader() {
         <div className="flex items-center gap-3">
           {loggedIn && (
             <div className="relative" ref={notifWrapRef}>
-              {/* ÇAN BUTONU */}
-              <button 
-                onClick={handleNotifClick} 
-                className="relative flex items-center justify-center p-2 text-slate-600 rounded-full hover:bg-slate-50 active:scale-95 transition-all outline-none"
-              >
+              <button onClick={handleNotifClick} className="relative flex items-center justify-center p-2 text-slate-600 rounded-full hover:bg-slate-50 active:scale-95 transition-all outline-none">
                 <IoNotificationsOutline size={26} />
-                
-                {/* Sadece okunmamış bildirim varsa ve hasUnread true ise kırmızı balon görünür */}
                 {hasUnread && notifications.length > 0 && (
                   <span className="absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white ring-2 ring-white shadow-sm animate-pulse">
                     {notifications.length}
@@ -128,18 +164,14 @@ export default function AppHeader() {
                 )}
               </button>
 
-              {/* ÇAN DROPDOWN PANELİ */}
               {showNotifications && (
                 <div className="absolute top-12 right-0 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 max-h-96 overflow-y-auto">
                   <div className="px-4 py-2 border-b border-slate-50 font-bold text-sm text-slate-800 flex justify-between items-center">
                     <span>Bildirimler</span>
                     <span className="text-xs bg-rose-50 text-rose-500 px-2 py-0.5 rounded-full">{notifications.length} Adet</span>
                   </div>
-                  
                   {notifications.length === 0 ? (
-                    <div className="px-4 py-6 text-center text-xs text-slate-400">
-                      Henüz yeni bir bildiriminiz yok.
-                    </div>
+                    <div className="px-4 py-6 text-center text-xs text-slate-400">Henüz yeni bir bildiriminiz yok.</div>
                   ) : (
                     <ul className="divide-y divide-slate-50">
                       {notifications.map((notif) => (
@@ -147,9 +179,7 @@ export default function AppHeader() {
                           <div className="text-xs text-slate-700 leading-relaxed">
                             <span className="font-bold text-slate-900">@{notif.senderName}</span> {notif.text}
                           </div>
-                          <span className="text-[9px] text-slate-400">
-                            {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
+                          <span className="text-[9px] text-slate-400">{new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                         </li>
                       ))}
                     </ul>
@@ -158,15 +188,12 @@ export default function AppHeader() {
               )}
             </div>
           )}
-          
-          <Link to={appRoutes.profile} className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-700 font-bold text-sm overflow-hidden">
-             S
-          </Link>
+          <Link to={appRoutes.profile} className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-700 font-bold text-sm overflow-hidden">S</Link>
         </div>
       </div>
 
-      {/* Arama Barı */}
-      <div className="px-4 pb-3">
+      {/* Arama Barı ve Canlı Öneriler Alanı */}
+      <div className="px-4 pb-3 relative" ref={searchWrapRef}>
         <form onSubmit={onSearchSubmit} className="relative flex items-center gap-2">
           <div className="relative flex-grow">
             <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -174,8 +201,11 @@ export default function AppHeader() {
               type="search"
               placeholder="Mekan veya menü ara..."
               value={searchDraft}
-              onChange={(e) => setSearchDraft(e.target.value)}
-              // text-slate-900 eklenerek yazı rengi görünür hale getirildi
+              onChange={(e) => {
+                setSearchDraft(e.target.value);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
               className="w-full bg-slate-100 text-slate-900 border-none rounded-xl py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
             />
           </div>
@@ -188,6 +218,60 @@ export default function AppHeader() {
             {SEARCH_CATEGORY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
           </select>
         </form>
+
+        {/* --- DİNAMİK ARAMA SONUÇLARI LISTESI (DROPDOWN) --- */}
+        {showSuggestions && searchDraft.trim().length > 0 && (
+          <div className="absolute left-4 right-4 top-12 bg-white rounded-2xl shadow-xl border border-slate-100 mt-1 p-2 z-50 max-h-72 overflow-y-auto">
+            
+            {/* ÜST GRUP: Menü / Kategori Önerileri */}
+            {filteredSuggestions.categories.length > 0 && (
+              <div className="mb-2">
+                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Menü / Kategoriler</div>
+                {filteredSuggestions.categories.map(cat => (
+                  <button
+                    key={cat.value}
+                    onClick={() => {
+                      setSearchDraft("");
+                      setShowSuggestions(false);
+                      navigate(`${appRoutes.venues}?cat=${cat.value}`);
+                    }}
+                    className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 rounded-xl transition flex items-center gap-2"
+                  >
+                    🍴 <span className="font-medium text-slate-900">{cat.label}</span> filtresini uygula
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* ALT GRUP: Mekan Önerileri */}
+            {filteredSuggestions.venues.length > 0 && (
+              <div>
+                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Mekanlar</div>
+                {filteredSuggestions.venues.map(venue => (
+                  <button
+                    key={venue._id || venue.id}
+                    onClick={() => {
+                      setSearchDraft("");
+                      setShowSuggestions(false);
+                      navigate(`${appRoutes.venues}/${venue._id || venue.id}`);
+                    }}
+                    className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 rounded-xl transition flex flex-col gap-0.5"
+                  >
+                    <span className="font-bold text-slate-900">📍 {venue.name}</span>
+                    <span className="text-[10px] text-slate-400 pl-4">{venue.address || 'Mekanı incele'}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Eşleşme Yoksa Gösterilecek Durum */}
+            {filteredSuggestions.categories.length === 0 && filteredSuggestions.venues.length === 0 && (
+              <div className="px-3 py-4 text-center text-xs text-slate-400">
+                "{searchDraft}" ile ilgili bir sonuç bulunamadı.
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </header>
   );
