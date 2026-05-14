@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../services/api";
 import { SEARCH_CATEGORY_OPTIONS, toTurkishCategory } from "../utils/category";
@@ -35,14 +35,15 @@ export default function AppHeader() {
 
     const delayDebounceFn = setTimeout(async () => {
       try {
-        const response = await api.get(`/venues?name=${encodeURIComponent(query)}`);
+        // Arama yaparken limiti yüksek tutuyoruz ki menü eşleşmelerini kaçırmayalım
+        const response = await api.get(`/venues?limit=100`);
         const items = response.data?.data?.items || response.data?.items || [];
         setSuggestedVenues(Array.isArray(items) ? items : []);
       } catch (err) {
         console.error("Canlı arama yapılırken hata oluştu:", err);
         setSuggestedVenues([]);
       }
-    }, 300);
+    }, 200); // Daha hızlı yanıt için süreyi 200ms'ye çektim
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchDraft]);
@@ -110,12 +111,6 @@ export default function AppHeader() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const matchedCategories = searchDraft.trim()
-    ? SEARCH_CATEGORY_OPTIONS.filter(opt =>
-        opt.label.toLowerCase().includes(searchDraft.toLowerCase())
-      )
-    : [];
-
   const onSearchSubmit = (e) => {
     e.preventDefault();
     if (!loggedIn) { navigate(appRoutes.login); return; }
@@ -124,24 +119,61 @@ export default function AppHeader() {
     setShowSuggestions(false);
   };
 
-  // --- %100 KURŞUN GEÇİRMEZ GÜVENLİ ETİKET FONKSİYONU ---
-  // Hata üreten adres nesnesini tamamen bypass eder, sadece güvenli metin basar
-  const getSafeDescription = (venue) => {
-    if (!venue) return "Mekanı incele";
-    
-    // Eğer kategori varsa Türkçe karşılığını bas, çökme ihtimalini sıfırla
-    if (venue.category && typeof venue.category === "string") {
-      const turkishCat = toTurkishCategory(venue.category);
-      if (typeof turkishCat === "string") return turkishCat;
-    }
-    
-    // Eğer address düz bir metin olarak girildiyse onu bas
-    if (venue.address && typeof venue.address === "string") {
-      return venue.address;
-    }
-    
-    return "Mekan detayını gör";
-  };
+  // --- CEREN'İN İSTEDİĞİ AKILLI FİLTRELEME VE ETİKETLEME MANTIĞI ---
+  const processedSuggestions = useMemo(() => {
+    const query = searchDraft.trim().toLocaleLowerCase("tr-TR");
+    if (!query) return [];
+
+    const results = [];
+
+    suggestedVenues.forEach(venue => {
+      if (!venue) return;
+
+      const venueName = String(venue.name || "").toLocaleLowerCase("tr-TR");
+      const venueCategory = String(venue.category || "").toLocaleLowerCase("tr-TR");
+      const turkishCatLabel = toTurkishCategory(venue.category) || "Mekan";
+
+      let isMatched = false;
+      let tagText = turkishCatLabel; // Varsayılan etiket mekanın kategorisidir (Örn: Restoran, Kafe)
+
+      // Senaryo 1: Kullanıcının yazdığı harf MEKAN ADINDA geçiyor mu?
+      if (venueName.includes(query)) {
+        isMatched = true;
+        tagText = turkishCatLabel; // Etiket: Restoran / Kafe vs.
+      } 
+      // Senaryo 2: Kullanıcının yazdığı harf KATEGORİDE geçiyor mu?
+      else if (venueCategory.includes(query) || turkishCatLabel.toLocaleLowerCase("tr-TR").includes(query)) {
+        isMatched = true;
+        tagText = turkishCatLabel;
+      }
+      // Senaryo 3: Kullanıcının yazdığı harf MENÜDEKİ YEMEKLERDE geçiyor mu? (Örn: "köfte")
+      else if (Array.isArray(venue.menu)) {
+        // Menüdeki yemeklerin ismini kontrol et
+        const matchedMenuItem = venue.menu.find(item => {
+          const itemName = String(item?.name || item || "").toLocaleLowerCase("tr-TR");
+          return itemName.includes(query);
+        });
+
+        if (matchedMenuItem) {
+          isMatched = true;
+          const matchedName = String(matchedMenuItem?.name || matchedMenuItem);
+          tagText = `Menü: ${matchedName}`; // İstediğin format: En sağda "Menü: Köfte" yazacak
+        }
+      }
+
+      // Eğer herhangi bir şekilde eşleşme yakaladıysak listeye ekle
+      if (isMatched) {
+        results.push({
+          id: venue._id || venue.id || Math.random().toString(),
+          name: venue.name || "İsimsiz Mekan",
+          rawVenueName: venue.name, // Yönlendirme için orijinal isim
+          tag: tagText
+        });
+      }
+    });
+
+    return results;
+  }, [searchDraft, suggestedVenues]);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-100 pt-[env(safe-area-inset-top)]">
@@ -224,56 +256,40 @@ export default function AppHeader() {
           </select>
         </form>
 
-        {/* Öneri Listesi Dropdown */}
+        {/* --- AKILLI ÖNERİ LİSTESİ DROPDOWN PANELİ --- */}
         {showSuggestions && searchDraft.trim().length > 0 && (
           <div className="absolute left-4 right-4 top-12 bg-white rounded-2xl shadow-xl border border-slate-100 mt-1 p-2 z-50 max-h-72 overflow-y-auto">
+            <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-50 mb-1">
+              Arama Sonuçları
+            </div>
             
-            {/* Üst Kısım: Kategoriler */}
-            {matchedCategories.length > 0 && (
-              <div className="mb-2">
-                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Menü / Kategoriler</div>
-                {matchedCategories.map(cat => (
-                  <button
-                    key={cat.value}
-                    onClick={() => {
-                      setSearchDraft("");
-                      setShowSuggestions(false);
-                      navigate(`${appRoutes.venues}?cat=${cat.value}`);
-                    }}
-                    className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 rounded-xl transition flex items-center gap-2"
-                  >
-                    🍴 <span className="font-medium text-slate-900">{cat.label}</span> filtresini uygula
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Alt Kısım: Mekanlar */}
-            {suggestedVenues.length > 0 && (
-              <div>
-                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Mekanlar</div>
-                {suggestedVenues.map(venue => (
-                  <button
-                    key={venue._id || venue.id || Math.random().toString()}
-                    onClick={() => {
-                      setSearchDraft("");
-                      setShowSuggestions(false);
-                      navigate(`${appRoutes.venues}?q=${encodeURIComponent(venue.name || '')}`);
-                    }}
-                    className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 rounded-xl transition flex flex-col gap-0.5"
-                  >
-                    <span className="font-bold text-slate-900">📍 {typeof venue?.name === "string" ? venue.name : "İsimsiz Mekan"}</span>
-                    {/* HATA VEREN ADRES YERİNE %100 GÜVENLİ ETİKET FONKSİYONUNU BAĞLADIK */}
-                    <span className="text-[10px] text-slate-400 pl-4">{getSafeDescription(venue)}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Sonuç Bulunamadıysa */}
-            {matchedCategories.length === 0 && suggestedVenues.length === 0 && (
+            {processedSuggestions.length === 0 ? (
               <div className="px-3 py-4 text-center text-xs text-slate-400">
-                "{searchDraft}" ile ilgili bir sonuç bulunamadı.
+                "{searchDraft}" ile eşleşen bir mekan veya menü bulunamadı.
+              </div>
+            ) : (
+              <div className="flex flex-col gap-0.5">
+                {processedSuggestions.map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setSearchDraft("");
+                      setShowSuggestions(false);
+                      navigate(`${appRoutes.venues}?q=${encodeURIComponent(item.rawVenueName || '')}`);
+                    }}
+                    className="w-full text-left px-3 py-2.5 text-xs text-slate-700 hover:bg-slate-50 rounded-xl transition flex items-center justify-between gap-4"
+                  >
+                    {/* Sol taraf: Mekan İsmi */}
+                    <span className="font-semibold text-slate-900 flex items-center gap-1.5 truncate">
+                      📍 {item.name}
+                    </span>
+                    
+                    {/* Sağ taraf: İstediğin Dinamik Etiket (Örn: Restoran veya Menü: Köfte) */}
+                    <span className="text-[10px] font-medium bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full whitespace-nowrap shadow-sm border border-slate-200/40">
+                      {item.tag}
+                    </span>
+                  </button>
+                ))}
               </div>
             )}
           </div>
