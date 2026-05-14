@@ -12,54 +12,57 @@ export default function AppHeader() {
   const [searchParams] = useSearchParams();
   const notifWrapRef = useRef(null);
 
+  // Kullanıcının giriş yapıp yapmadığını kontrol ediyoruz
   const loggedIn = typeof window !== "undefined" && !!localStorage.getItem(AUTH_TOKEN_KEY);
-  const [user, setUser] = useState(null);
+  
+  // Ekranda gösterilecek bildirimlerin state'i
+  const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchDraft, setSearchDraft] = useState(searchParams.get("q") ?? "");
-  
-  // Sadece yorum beğenileri ve yanıtları için bildirim state'i
-  const [notifications, setNotifications] = useState([]);
 
+  // Ana sayfa, giriş ve kayıt sayfalarında geri butonunu gizle
   const hideBackButton = ['/', '/login', '/register'].includes(location.pathname);
 
-  // 1. Sadece Yorum Beğeni ve Yanıt Bildirimlerini Çekme Fonksiyonu
-  const fetchGeneralNotifications = useCallback(async () => {
+  // 1. Backend'den Sadece Yorum Beğeni Bildirimlerini Çeken Fonksiyon
+  const fetchLikeNotifications = useCallback(async () => {
     if (!loggedIn) return;
     try {
+      // Backend bildirim endpoint'ine istek atıyoruz
       const response = await api.get("/notifications");
-      const resDataGen = response.data;
+      const resData = response.data;
       
-      // Backend'den dönen array yapısını güvenli bir şekilde yakalıyoruz
-      const generalItems = resDataGen?.items || resDataGen?.data?.items || resDataGen?.data || (Array.isArray(resDataGen) ? resDataGen : []);
+      // Gelen verinin array (liste) olduğundan emin oluyoruz
+      const items = resData?.items || resData?.data?.items || resData?.data || (Array.isArray(resData) ? resData : []);
       
-      const formattedGenerals = generalItems.map(item => ({
+      // Gelen bildirimleri arayüze uygun formatlıyoruz
+      const formattedNotifications = items.map(item => ({
         id: item._id || item.id,
-        type: item.type || "like", // "comment" veya "like"
         senderName: item.sender?.username || item.username || "Bir kullanıcı",
-        text: item.type === "comment" ? "yorumunuza yanıt verdi." : "yorumunuzu beğendi.",
+        text: "yorumunu beğendi.", // Doğrudan senin istediğin metin
         createdAt: item.createdAt || new Date()
       }));
 
-      // Tarihe göre yeniden eskiye (en yeni en üstte) sırala
-      formattedGenerals.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      setNotifications(formattedGenerals);
+      // En yeni bildirimi en üstte göstermek için tarihe göre sıralıyoruz
+      formattedNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      
+      setNotifications(formattedNotifications);
     } catch (err) {
-      console.error("Yorum bildirimleri çekilirken hata oluştu:", err);
+      console.error("Bildirimler yüklenirken hata oluştu:", err);
     }
   }, [loggedIn]);
 
-  // 2. Sayfa Açıldığında ve Her 10 Saniyede Bir Arkada Yenileme (Polling)
+  // 2. Sayfa Yüklendiğinde Çalışır ve Her 10 Saniyede Bir Yeni Beğeni Var mı diye Arkada Kontrol Eder (Polling)
   useEffect(() => {
     if (loggedIn) {
-      fetchGeneralNotifications();
+      fetchLikeNotifications();
       const interval = setInterval(() => {
-        fetchGeneralNotifications();
-      }, 10000);
+        fetchLikeNotifications();
+      }, 10000); // 10 saniye
       return () => clearInterval(interval);
     }
-  }, [loggedIn, fetchGeneralNotifications]);
+  }, [loggedIn, fetchLikeNotifications]);
 
-  // 3. Dışarı Tıklayınca Açılır Menüyü Kapatma
+  // 3. Çan Menüsü Açıkken Ekranda Başka Bir Yere Tıklanırsa Menüyü Kapatır
   useEffect(() => {
     function handleClickOutside(event) {
       if (notifWrapRef.current && !notifWrapRef.current.contains(event.target)) {
@@ -79,7 +82,7 @@ export default function AppHeader() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-100 pt-[env(safe-area-inset-top)]">
-      {/* Üst Bar */}
+      {/* Üst Logo ve Çan Alanı */}
       <div className="flex items-center justify-between px-4 h-14">
         <div className="flex items-center gap-2">
           {!hideBackButton && (
@@ -95,10 +98,11 @@ export default function AppHeader() {
           </Link>
         </div>
 
+        {/* Sağ Taraf: Çan ve Profil Simge Alanı */}
         <div className="flex items-center gap-3">
           {loggedIn && (
             <div className="relative" ref={notifWrapRef}>
-              {/* Çan Butonu */}
+              {/* ÇAN BUTONU */}
               <button 
                 onClick={() => setShowNotifications(!showNotifications)} 
                 className="relative flex items-center justify-center p-2 text-slate-600 rounded-full hover:bg-slate-50 active:scale-95 transition-all outline-none"
@@ -106,7 +110,7 @@ export default function AppHeader() {
               >
                 <IoNotificationsOutline size={26} />
                 
-                {/* DİNAMİK SAYAÇ (Sadece yorum beğenisi ve yanıtı sayısını gösterir) */}
+                {/* KIRMIZI BALON / SAYAÇ: Yeni bildirim varsa burada kırmızı renkte sayısı yazar */}
                 {notifications.length > 0 && (
                   <span className="absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white ring-2 ring-white shadow-sm animate-pulse">
                     {notifications.length}
@@ -114,7 +118,7 @@ export default function AppHeader() {
                 )}
               </button>
 
-              {/* --- YORUM BİLDİRİM PANELİ DROPDOWN --- */}
+              {/* ÇANA TIKLAYINCA AÇILAN PANEL (DROPDOWN) */}
               {showNotifications && (
                 <div className="absolute top-12 right-0 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 max-h-96 overflow-y-auto">
                   <div className="px-4 py-2 border-b border-slate-50 font-bold text-sm text-slate-800 flex justify-between items-center">
@@ -129,13 +133,13 @@ export default function AppHeader() {
                   ) : (
                     <ul className="divide-y divide-slate-50">
                       {notifications.map((notif) => (
-                        <li key={notif.id} className="px-4 py-3 hover:bg-slate-50 transition flex flex-col gap-1">
+                        <li key={notif.id} className="px-4 py-3 hover:bg-slate-50 transition flex flex-col gap-0.5">
                           <div className="text-xs text-slate-700 leading-relaxed">
+                            {/* İstediğin çıktı formatı: @kullaniciadi yorumunu beğendi. */}
                             <span className="font-bold text-slate-900">@{notif.senderName}</span> {notif.text}
                           </div>
-                          {/* İsteğe bağlı: Bildirim zamanını göstermek isterseniz */}
-                          <span className="text-[10px] text-slate-400">
-                            {new Date(notif.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          <span className="text-[9px] text-slate-400">
+                            {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </li>
                       ))}
@@ -145,13 +149,15 @@ export default function AppHeader() {
               )}
             </div>
           )}
+          
+          {/* Profil İkonu */}
           <Link to={appRoutes.profile} className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-700 font-bold text-sm overflow-hidden">
-             {user?.profilePhoto ? <img src={user.profilePhoto} alt="" /> : 'S'}
+             S
           </Link>
         </div>
       </div>
 
-      {/* Arama Barı */}
+      {/* Alt Kısım: Arama Barı */}
       <div className="px-4 pb-3">
         <form onSubmit={onSearchSubmit} className="relative flex items-center gap-2">
           <div className="relative flex-grow">
