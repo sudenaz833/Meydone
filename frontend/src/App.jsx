@@ -16,19 +16,11 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 
 function AppShell() {
   return (
-    // min-h-screen ve flex-col: İçeriği dikeyde tam yayar
     <div className="flex flex-col min-h-screen bg-white">
       <AppHeader />
-      
-      {/* 
-          pt-20: Header'ın altında kalmaması için üst boşluk.
-          pb-24: BottomNav'ın üstüne binmemesi için alt boşluk.
-          overflow-x-hidden: Mobilde sağa sola gereksiz kaymaları engeller.
-      */}
       <main className="flex-grow pt-20 pb-24 px-4 overflow-x-hidden">
         <Outlet />
       </main>
-
       <BottomNav /> 
     </div>
   );
@@ -36,7 +28,6 @@ function AppShell() {
 
 export default function App() {
   return (
-    // viewport-fit=cover özelliğiyle uyumlu olması için arka planı buradan yönetiyoruz
     <div className="min-h-screen bg-white selection:bg-rose-100">
       <Routes>
         {/* Misafir Sayfaları (Giriş/Kayıt) */}
@@ -50,12 +41,18 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/mekanlar" element={<VenuesListPage />} />
           <Route path="/venues/:id" element={<VenueDetailPage />} />
+          
+          {/* --- CEREN BURAYA DİKKAT: PROFİLİ BURAYA TAŞIDIK ---
+            Profil sayfasını RequireAuth duvarının dışına, genel AppShell içine aldık.
+            ProfilePage kendi içinde zaten giriş kontrolü (status === 'guest') yaptığı için 
+            giriş yapmayanları yine engelleyecek ama giriş yapmış admini asla engellemeyecek!
+          */}
+          <Route path="/profile" element={<ProfilePage />} />
         </Route>
 
-        {/* Sadece Giriş Yapmış Kullanıcılar */}
+        {/* Sadece Giriş Yapmış Kullanıcılar ve Özel Sayfalar */}
         <Route element={<RequireAuth />}>
           <Route element={<AppShell />}>
-            <Route path="/profile" element={<ProfilePage />} />
             <Route path="/friends" element={<FriendsPage />} />
             <Route path="/friends/profile/:id" element={<FriendProfilePage />} />
             <Route path="/admin" element={<AdminDashboardPage />} />
