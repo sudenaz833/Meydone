@@ -20,56 +20,43 @@ export default function AppHeader() {
 
   const hideBackButton = ['/', '/login', '/register'].includes(location.pathname);
 
-  // 1. Geliştirilmiş ve Hata Yakalamalı Bildirim Çekme Fonksiyonu
+  // 1. Backend'den Nokta Atışı Yorum Beğenilerini Çeken Fonksiyon
   const fetchLikeNotifications = useCallback(async () => {
     if (!loggedIn) return;
     try {
-      const response = await api.get("/notifications");
+      // Ceren bak burayı backend'den bulduğun "/notifications/comment-likes" adresiyle güncelledik!
+      const response = await api.get("/notifications/comment-likes");
       
-      // --- CEREN İÇİN KONSOL KONTROLÜ ---
-      // Eğer yine bildirim düşmezse tarayıcıda F12'ye basıp Console sekmesine bak, backend'in ne döndüğünü göreceğiz.
-      console.log("Backend'den Gelen Ham Veri:", response.data);
+      console.log("Yorum Beğeni Bildirimleri:", response.data);
 
       const resData = response.data;
       if (!resData) return;
 
-      // Backend'in veriyi koyabileceği tüm ihtimalleri tek tek kontrol ediyoruz:
-      let rawItems = [];
-      if (Array.isArray(resData)) {
-        rawItems = resData;
-      } else if (resData.notifications && Array.isArray(resData.notifications)) {
-        rawItems = resData.notifications;
-      } else if (resData.items && Array.isArray(resData.items)) {
-        rawItems = resData.items;
-      } else if (resData.data && Array.isArray(resData.data)) {
-        rawItems = resData.data;
-      } else if (resData.data?.items && Array.isArray(resData.data.items)) {
-        rawItems = resData.data.items;
-      }
+      // Backend'den dönen verinin array halini güvenli bir şekilde yakalıyoruz
+      const items = resData?.items || resData?.data?.items || resData?.data || (Array.isArray(resData) ? resData : []);
+      
+      // Gelen verileri "@kullanici yorumunu beğendi." formatına sokuyoruz
+      const formattedNotifications = items.map(item => {
+        // Beğeniyi atan kullanıcının adını buluyoruz (backend modellerine göre alternatifler)
+        const senderUsername = item.sender?.username || item.user?.username || item.username || "Bir kullanıcı";
+        return {
+          id: item._id || item.id || Math.random().toString(),
+          senderName: senderUsername,
+          text: "yorumunu beğendi.",
+          createdAt: item.createdAt || new Date()
+        };
+      });
 
-      // Sadece "like" (beğeni) olan veya tipi belirtilmemiş/beğeni formatındaki bildirimleri filtrele
-      const formattedNotifications = rawItems
-        .map(item => {
-          // Gönderen kişinin kullanıcı adını bulmak için alternatif alanlar
-          const senderUsername = item.sender?.username || item.user?.username || item.username || "Bir kullanıcı";
-          return {
-            id: item._id || item.id || Math.random().toString(),
-            senderName: senderUsername,
-            text: "yorumunu beğendi.",
-            createdAt: item.createdAt || new Date()
-          };
-        });
-
-      // En yeni bildirimi üstte göster
+      // En yeni bildirimi en üstte gösterecek şekilde sırala
       formattedNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       
       setNotifications(formattedNotifications);
     } catch (err) {
-      console.error("Ceren, bildirim API isteği atılırken hata oluştu:", err);
+      console.error("Yorum beğenileri çekilirken hata oluştu:", err);
     }
   }, [loggedIn]);
 
-  // 2. 5 Saniyede Bir Kontrol Et (Hızlıca test edebilmen için süreyi 5 saniyeye düşürdüm)
+  // 2. 5 Saniyede Bir Arkada Yenileme (Polling)
   useEffect(() => {
     if (loggedIn) {
       fetchLikeNotifications();
@@ -80,7 +67,7 @@ export default function AppHeader() {
     }
   }, [loggedIn, fetchLikeNotifications]);
 
-  // 3. Dışarı Tıklayınca Kapatma Menüsü
+  // 3. Dışarı Tıklayınca Dropdown Kapatma
   useEffect(() => {
     function handleClickOutside(event) {
       if (notifWrapRef.current && !notifWrapRef.current.contains(event.target)) {
@@ -122,7 +109,7 @@ export default function AppHeader() {
               >
                 <IoNotificationsOutline size={26} />
                 
-                {/* KIRMIZI BALON VE DİNAMİK SAYAÇ */}
+                {/* KIRMIZI BİLDİRİM BALONU */}
                 {notifications.length > 0 && (
                   <span className="absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white ring-2 ring-white shadow-sm animate-pulse">
                     {notifications.length}
@@ -130,7 +117,7 @@ export default function AppHeader() {
                 )}
               </button>
 
-              {/* ÇAN DROPDOWN PANELİ */}
+              {/* ÇAN PANELİ (DROPDOWN) */}
               {showNotifications && (
                 <div className="absolute top-12 right-0 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 max-h-96 overflow-y-auto">
                   <div className="px-4 py-2 border-b border-slate-50 font-bold text-sm text-slate-800 flex justify-between items-center">
