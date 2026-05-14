@@ -21,62 +21,46 @@ export default function AppHeader() {
 
   const hideBackButton = ['/', '/login', '/register'].includes(location.pathname);
 
-  // 1. Detaylı Bildirim Çekme Fonksiyonu
+  // 1. Backend Veri Yapısıyla Birebir Eşleşen Bildirim Çekme Fonksiyonu
   const fetchLikeNotifications = useCallback(async () => {
     if (!loggedIn) return;
     try {
       const response = await api.get("/notifications/comment-likes");
-      const resData = response.data;
-      if (!resData) return;
-
-      const items = resData?.items || resData?.data?.items || resData?.data || (Array.isArray(resData) ? resData : []);
       
-      const formattedNotifications = items.map(item => {
-        // A. Beğenen Kullanıcı Adını Yakala
-        const username = 
-          item.sender?.username || 
-          item.user?.username || 
-          item.likedBy?.username || 
-          item.username || 
-          "Bir kullanıcı";
+      // Backend'den gelen veri response.data.data.items içindeymiş, orayı tam yakalıyoruz
+      const rawItems = response.data?.data?.items || [];
+      
+      const formattedNotifications = rawItems.map(item => {
+        // Backend'den gelen "likers" dizisindeki ilk kişinin kullanıcı adını alıyoruz
+        const firstLiker = item.likers && item.likers[0];
+        const username = firstLiker?.username || firstLiker?.name || "Bir kullanıcı";
 
-        // B. Beğenilen Yorumun İçeriğini Yakala (Backend alan isimlerine göre alternatifler)
-        // Eğer backend yorumun içeriğini vermiyorsa yedek olarak "senin" kelimesini koyar.
-        const commentContent = 
-          item.comment?.text || 
-          item.comment?.content || 
-          item.commentText || 
-          item.targetComment?.text ||
-          "senin"; 
-
-        // C. Bildirim metnini dinamik olarak oluşturuyoruz
-        // Örneğin: commentContent "çok iyi" ise -> '"çok iyi" yorumunu beğendi.'
-        // Eğer içerik bulunamazsa yedek olarak -> 'senin yorumunu beğendi.'
-        const isFallback = commentContent === "senin";
-        const notificationText = isFallback 
-          ? "senin yorumunu beğendi." 
-          : `"${commentContent}" yorumunu beğendi.`;
+        // Backend bize yorumun metnini tam olarak "commentPreview" ismiyle veriyor
+        const commentText = item.commentPreview || "senin";
 
         return {
-          id: item._id || item.id || Math.random().toString(),
+          id: item.commentId || Math.random().toString(),
           senderName: username,
-          text: notificationText, 
-          createdAt: item.createdAt || new Date()
+          // Örn: "sudeee "çok iyi" yorumunu beğendi." formatını üretiyoruz
+          text: `"${commentText}" yorumunu beğendi.`, 
+          createdAt: item.updatedAt || new Date()
         };
       });
 
+      // Tarihe göre sırala
       formattedNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setNotifications(formattedNotifications);
       
+      // Eğer listede bildirim varsa sayacı aktif et
       if (formattedNotifications.length > 0) {
         setHasUnread(true);
       }
     } catch (err) {
-      console.error("Yorum beğenileri işlenirken hata:", err);
+      console.error("Yorum beğenileri çekilirken hata oluştu:", err);
     }
   }, [loggedIn]);
 
-  // 2. Polling Yapısı (5 Saniyede Bir)
+  // 2. 5 Saniyede Bir Polling Yapısı
   useEffect(() => {
     if (loggedIn) {
       fetchLikeNotifications();
@@ -89,7 +73,7 @@ export default function AppHeader() {
     }
   }, [loggedIn, fetchLikeNotifications, showNotifications]);
 
-  // 3. Çan Simgesine Tıklanınca Sayacı Sıfırlama
+  // 3. Çan Simgesine Tıklanınca Kırmızı Sayacı Sıfırlama
   const handleNotifClick = () => {
     const nextShowState = !showNotifications;
     setShowNotifications(nextShowState);
@@ -98,7 +82,7 @@ export default function AppHeader() {
     }
   };
 
-  // 4. Dışarı Tıklayınca Kapatma
+  // 4. Dışarı Tıklayınca Dropdown Kapatma
   useEffect(() => {
     function handleClickOutside(event) {
       if (notifWrapRef.current && !notifWrapRef.current.contains(event.target)) {
@@ -140,7 +124,7 @@ export default function AppHeader() {
               >
                 <IoNotificationsOutline size={26} />
                 
-                {/* OKUNMAMIŞ BİLDİRİM BALONU */}
+                {/* YENİ BİLDİRİM BALONU */}
                 {hasUnread && notifications.length > 0 && (
                   <span className="absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white ring-2 ring-white shadow-sm animate-pulse">
                     {notifications.length}
@@ -148,7 +132,7 @@ export default function AppHeader() {
                 )}
               </button>
 
-              {/* ÇAN PANELİ */}
+              {/* ÇAN DROPDOWN PANELİ */}
               {showNotifications && (
                 <div className="absolute top-12 right-0 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 max-h-96 overflow-y-auto">
                   <div className="px-4 py-2 border-b border-slate-50 font-bold text-sm text-slate-800 flex justify-between items-center">
@@ -164,7 +148,7 @@ export default function AppHeader() {
                     <ul className="divide-y divide-slate-50">
                       {notifications.map((notif) => (
                         <li key={notif.id} className="px-4 py-3 hover:bg-slate-50 transition flex flex-col gap-0.5">
-                          {/* İSTEDİĞİN DİNAMİK FORMAT: @sudeee "çok iyi" yorumunu beğendi. */}
+                          {/* TAM İSTEDİĞİN ÇIKTI: @sudeee "çok iyi" yorumunu beğendi. */}
                           <div className="text-xs text-slate-700 leading-relaxed">
                             <span className="font-bold text-slate-900">@{notif.senderName}</span> {notif.text}
                           </div>
