@@ -42,12 +42,9 @@ export default function AppHeader() {
       // A. Arkadaşlık İsteklerini Doğru Alanlarla Yakalama
       if (responses[0].status === "fulfilled") {
         const resData = responses[0].value.data;
-        // Backend yapına göre data, data.items veya data.data.items içindeki diziyi buluyoruz
         const friendItems = resData?.items || resData?.data?.items || resData?.data || (Array.isArray(resData) ? resData : []);
         
         const formattedFriends = friendItems.map(item => {
-          // Ekran görüntündeki kartlarda hangi alan doluyorsa onu yakalıyoruz:
-          // Öncelik istek atan kullanıcının (sender) adı, yoksa doğrudan item'ın kendisidir
           const senderUsername = item.sender?.username || item.sender?.name || item.username || item.name || "Bir kullanıcı";
           
           return {
@@ -118,7 +115,6 @@ export default function AppHeader() {
       setNotifications(prev => prev.filter(n => n.id !== id));
     } catch (err) {
       console.error("İstek işlenirken hata oluştu:", err);
-      // Backend tamamlanana kadar UI donmasın diye yerelde de silebilirsin
       setNotifications(prev => prev.filter(n => n.id !== id));
     }
   };
@@ -152,15 +148,17 @@ export default function AppHeader() {
         <div className="flex items-center gap-3">
           {loggedIn && (
             <div className="relative" ref={notifWrapRef}>
+              {/* Çan Butonu: Düzenlenmiş flex yerleşimi */}
               <button 
                 onClick={() => setShowNotifications(!showNotifications)} 
-                className="p-2 text-slate-600 relative active:scale-95 transition-transform"
+                className="relative flex items-center justify-center p-2 text-slate-600 rounded-full hover:bg-slate-50 active:scale-95 transition-all outline-none"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
               >
-                <IoNotificationsOutline size={24} />
+                <IoNotificationsOutline size={26} />
                 
-                {/* DİNAMİK KIRMIZI DAİRE SAYACI */}
+                {/* DİNAMİK KIRMIZI DAİRE SAYACI (Tam çanın omzuna hizalandı) */}
                 {notifications.length > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-rose-500 text-white font-bold text-[10px] rounded-full border border-white flex items-center justify-center px-1 shadow-sm">
+                  <span className="absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white ring-2 ring-white shadow-sm animate-pulse">
                     {notifications.length}
                   </span>
                 )}
