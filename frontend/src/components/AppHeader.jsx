@@ -1,96 +1,65 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { Link, NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../services/api";
-import { normalizeCategoryKey, SEARCH_CATEGORY_OPTIONS, toTurkishCategory } from "../utils/category";
-import { notifyAuthChanged } from "../utils/auth";
+import { SEARCH_CATEGORY_OPTIONS } from "../utils/category";
 import { AUTH_TOKEN_KEY } from "../utils/constants";
-import { formatTryPrice, menuItemName, menuItemPrice } from "../utils/venueMenu";
 import { appRoutes } from "../utils/routes";
-import { IoChevronBack, IoNotificationsOutline, IoSearchOutline, IoCheckmarkCircle, IoCloseCircle } from 'react-icons/io5';
+import { IoChevronBack, IoNotificationsOutline, IoSearchOutline } from 'react-icons/io5';
 
 export default function AppHeader() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const notifWrapRef = useRef(null);
 
   const loggedIn = typeof window !== "undefined" && !!localStorage.getItem(AUTH_TOKEN_KEY);
   const [user, setUser] = useState(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchDraft, setSearchDraft] = useState(searchParams.get("q") ?? "");
+  
+  // Sadece yorum beğenileri ve yanıtları için bildirim state'i
   const [notifications, setNotifications] = useState([]);
 
   const hideBackButton = ['/', '/login', '/register'].includes(location.pathname);
 
-  // 1. Bildirimleri ve Arkadaşlık İsteklerini Çekme Fonksiyonu
-  const fetchAllNotifications = useCallback(async () => {
+  // 1. Sadece Yorum Beğeni ve Yanıt Bildirimlerini Çekme Fonksiyonu
+  const fetchGeneralNotifications = useCallback(async () => {
     if (!loggedIn) return;
     try {
-      const responses = await Promise.allSettled([
-        api.get("/friends/pending"),
-        api.get("/notifications").catch(() => ({ data: [] }))
-      ]);
+      const response = await api.get("/notifications");
+      const resDataGen = response.data;
+      
+      // Backend'den dönen array yapısını güvenli bir şekilde yakalıyoruz
+      const generalItems = resDataGen?.items || resDataGen?.data?.items || resDataGen?.data || (Array.isArray(resDataGen) ? resDataGen : []);
+      
+      const formattedGenerals = generalItems.map(item => ({
+        id: item._id || item.id,
+        type: item.type || "like", // "comment" veya "like"
+        senderName: item.sender?.username || item.username || "Bir kullanıcı",
+        text: item.type === "comment" ? "yorumunuza yanıt verdi." : "yorumunuzu beğendi.",
+        createdAt: item.createdAt || new Date()
+      }));
 
-      let combinedNotifications = [];
-
-      // A. Arkadaşlık İsteklerini Yakalama
-      if (responses[0].status === "fulfilled") {
-        const resData = responses[0].value.data;
-        // Backend yapınıza göre array'i güvenli bir şekilde filtreleyip alıyoruz
-        const friendItems = resData?.items || resData?.data?.items || resData?.data || (Array.isArray(resData) ? resData : []);
-        
-        const formattedFriends = friendItems.map(item => {
-          // ÖNEMLİ: Arkadaşlık isteğinin ana ID'sini (item._id) yakalıyoruz. 
-          // Eğer id burada eksik olursa kabul et/reddet butonları çalışmaz.
-          const requestId = item._id || item.id;
-          const senderUsername = item.sender?.username || item.sender?.name || item.username || item.name || "Bir kullanıcı";
-          
-          return {
-            id: requestId, 
-            type: "friend_request",
-            senderName: senderUsername,
-            text: "sana arkadaşlık isteği gönderdi.",
-            createdAt: item.createdAt || new Date()
-          };
-        });
-        combinedNotifications = [...combinedNotifications, ...formattedFriends];
-      }
-
-      // B. Beğeniler ve Yorumları Yakalama
-      if (responses[1].status === "fulfilled" && responses[1].value?.data) {
-        const resDataGen = responses[1].value.data;
-        const generalItems = resDataGen?.items || resDataGen?.data?.items || resDataGen?.data || (Array.isArray(resDataGen) ? resDataGen : []);
-        
-        const formattedGenerals = generalItems.map(item => ({
-          id: item._id || item.id,
-          type: item.type || "like",
-          senderName: item.sender?.username || item.username || "Bir kullanıcı",
-          text: item.type === "comment" ? "yorumunuza yanıt verdi." : "yorumunuzu beğendi.",
-          createdAt: item.createdAt || new Date()
-        }));
-        combinedNotifications = [...combinedNotifications, ...formattedGenerals];
-      }
-
-      // Tarihe göre sırala (En yeni üstte)
-      combinedNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      setNotifications(combinedNotifications);
+      // Tarihe göre yeniden eskiye (en yeni en üstte) sırala
+      formattedGenerals.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setNotifications(formattedGenerals);
     } catch (err) {
-      console.error("Bildirim listesi güncellenirken hata:", err);
+      console.error("Yorum bildirimleri çekilirken hata oluştu:", err);
     }
   }, [loggedIn]);
 
-  // 2. Polling Yapısı (10 saniyede bir günceller)
+  // 2. Sayfa Açıldığında ve Her 10 Saniyede Bir Arkada Yenileme (Polling)
   useEffect(() => {
     if (loggedIn) {
-      fetchAllNotifications();
+      fetchGeneralNotifications();
       const interval = setInterval(() => {
-        fetchAllNotifications();
+        fetchGeneralNotifications();
       }, 10000);
       return () => clearInterval(interval);
     }
-  }, [loggedIn, fetchAllNotifications]);
+  }, [loggedIn, fetchGeneralNotifications]);
 
-  // 3. Dışarı Tıklayınca Kapatma
+  // 3. Dışarı Tıklayınca Açılır Menüyü Kapatma
   useEffect(() => {
     function handleClickOutside(event) {
       if (notifWrapRef.current && !notifWrapRef.current.contains(event.target)) {
@@ -101,27 +70,6 @@ export default function AppHeader() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 4. İstek Kabul / Reddet Buton Fonksiyonu
-  const handleFriendRequest = async (id, action) => {
-    if (!id) {
-      console.error("İstek ID bulunamadı!");
-      return;
-    }
-    try {
-      if (action === "accept") {
-        await api.post(`/friends/accept/${id}`);
-      } else {
-        await api.post(`/friends/reject/${id}`);
-      }
-      // Başarılı ise arayüzden kaldır
-      setNotifications(prev => prev.filter(n => n.id !== id));
-    } catch (err) {
-      console.error(`İstek ${action} edilirken hata oluştu:`, err);
-      // Hata durumunda listeyi backend'den tekrar tazeleyerek senkronize edin
-      fetchAllNotifications();
-    }
-  };
-
   const onSearchSubmit = (e) => {
     e.preventDefault();
     if (!loggedIn) { navigate(appRoutes.login); return; }
@@ -131,10 +79,14 @@ export default function AppHeader() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-100 pt-[env(safe-area-inset-top)]">
+      {/* Üst Bar */}
       <div className="flex items-center justify-between px-4 h-14">
         <div className="flex items-center gap-2">
           {!hideBackButton && (
-            <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full active:bg-rose-50 text-rose-500">
+            <button 
+              onClick={() => navigate(-1)} 
+              className="p-2 -ml-2 rounded-full active:bg-rose-50 text-rose-500"
+            >
               <IoChevronBack size={24} />
             </button>
           )}
@@ -154,7 +106,7 @@ export default function AppHeader() {
               >
                 <IoNotificationsOutline size={26} />
                 
-                {/* DİNAMİK BİLDİRİM SAYACI */}
+                {/* DİNAMİK SAYAÇ (Sadece yorum beğenisi ve yanıtı sayısını gösterir) */}
                 {notifications.length > 0 && (
                   <span className="absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white ring-2 ring-white shadow-sm animate-pulse">
                     {notifications.length}
@@ -162,7 +114,7 @@ export default function AppHeader() {
                 )}
               </button>
 
-              {/* BİLDİRİM PANELİ DROPDOWN */}
+              {/* --- YORUM BİLDİRİM PANELİ DROPDOWN --- */}
               {showNotifications && (
                 <div className="absolute top-12 right-0 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 max-h-96 overflow-y-auto">
                   <div className="px-4 py-2 border-b border-slate-50 font-bold text-sm text-slate-800 flex justify-between items-center">
@@ -177,28 +129,14 @@ export default function AppHeader() {
                   ) : (
                     <ul className="divide-y divide-slate-50">
                       {notifications.map((notif) => (
-                        <li key={notif.id} className="px-4 py-3 hover:bg-slate-50 transition flex flex-col gap-2">
+                        <li key={notif.id} className="px-4 py-3 hover:bg-slate-50 transition flex flex-col gap-1">
                           <div className="text-xs text-slate-700 leading-relaxed">
                             <span className="font-bold text-slate-900">@{notif.senderName}</span> {notif.text}
                           </div>
-                          
-                          {/* Arkadaşlık İsteği Butonları */}
-                          {notif.type === "friend_request" && (
-                            <div className="flex gap-2 justify-end">
-                              <button 
-                                onClick={() => handleFriendRequest(notif.id, "accept")}
-                                className="flex items-center gap-1 bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-medium py-1 px-2.5 rounded-lg transition"
-                              >
-                                <IoCheckmarkCircle size={14} /> Kabul Et
-                              </button>
-                              <button 
-                                onClick={() => handleFriendRequest(notif.id, "reject")}
-                                className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-medium py-1 px-2.5 rounded-lg transition"
-                              >
-                                <IoCloseCircle size={14} /> Reddet
-                              </button>
-                            </div>
-                          )}
+                          {/* İsteğe bağlı: Bildirim zamanını göstermek isterseniz */}
+                          <span className="text-[10px] text-slate-400">
+                            {new Date(notif.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          </span>
                         </li>
                       ))}
                     </ul>
