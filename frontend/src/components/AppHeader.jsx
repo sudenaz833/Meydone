@@ -17,57 +17,91 @@ export default function AppHeader() {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchDraft, setSearchDraft] = useState(searchParams.get("q") ?? "");
+  
+  // Bildirimin görülüp görülmediğini takip eden yeni state'imiz
+  const [hasUnread, setHasUnread] = useState(false);
 
   const hideBackButton = ['/', '/login', '/register'].includes(location.pathname);
 
-  // 1. Backend'den Nokta Atışı Yorum Beğenilerini Çeken Fonksiyon
+  // 1. Bildirimleri Çekme Fonksiyonu
   const fetchLikeNotifications = useCallback(async () => {
     if (!loggedIn) return;
     try {
-      // Ceren bak burayı backend'den bulduğun "/notifications/comment-likes" adresiyle güncelledik!
       const response = await api.get("/notifications/comment-likes");
-      
-      console.log("Yorum Beğeni Bildirimleri:", response.data);
-
       const resData = response.data;
       if (!resData) return;
 
-      // Backend'den dönen verinin array halini güvenli bir şekilde yakalıyoruz
       const items = resData?.items || resData?.data?.items || resData?.data || (Array.isArray(resData) ? resData : []);
       
-      // Gelen verileri "@kullanici yorumunu beğendi." formatına sokuyoruz
       const formattedNotifications = items.map(item => {
-        // Beğeniyi atan kullanıcının adını buluyoruz (backend modellerine göre alternatifler)
-        const senderUsername = item.sender?.username || item.user?.username || item.username || "Bir kullanıcı";
+        const username = 
+          item.sender?.username || 
+          item.user?.username || 
+          item.likedBy?.username || 
+          item.sender?.name ||
+          item.username || 
+          "Bir kullanıcı";
+
         return {
           id: item._id || item.id || Math.random().toString(),
-          senderName: senderUsername,
-          text: "yorumunu beğendi.",
-          createdAt: item.createdAt || new Date()
+          senderName: username,
+          text: "şu yorumunu beğendi.", 
+          createdAt: item.createdAt || new Date(),
+          isRead: item.isRead || false // Backend'den gelen okundu bilgisi
         };
       });
 
-      // En yeni bildirimi en üstte gösterecek şekilde sırala
       formattedNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       
       setNotifications(formattedNotifications);
+      
+      // Eğer listede henüz okunmamış bildirim varsa sayacı yak (hasUnread'i true yap)
+      if (formattedNotifications.length > 0) {
+        setHasUnread(true);
+      }
     } catch (err) {
-      console.error("Yorum beğenileri çekilirken hata oluştu:", err);
+      console.error("Yorum beğenileri işlenirken hata:", err);
     }
   }, [loggedIn]);
 
-  // 2. 5 Saniyede Bir Arkada Yenileme (Polling)
+  // 2. Polling Yapısı (5 Saniyede Bir)
   useEffect(() => {
     if (loggedIn) {
       fetchLikeNotifications();
       const interval = setInterval(() => {
-        fetchLikeNotifications();
+        // Eğer bildirim kutusu şu an açık değilse listeyi arkada güncellemeye devam et
+        if (!showNotifications) {
+          fetchLikeNotifications();
+        }
       }, 5000); 
       return () => clearInterval(interval);
     }
-  }, [loggedIn, fetchLikeNotifications]);
+  }, [loggedIn, fetchLikeNotifications, showNotifications]);
 
-  // 3. Dışarı Tıklayınca Dropdown Kapatma
+  // 3. Çan Simgesine Tıklanınca Çalışacak Fonksiyon
+  const handleNotifClick = async () => {
+    // Menünün görünürlüğünü tersine çevir (aç kapa)
+    const nextShowState = !showNotifications;
+    setShowNotifications(nextShowState);
+
+    // Eğer menü şu an açılıyorsa, sayacı sıfırla (Görüldü yap)
+    if (nextShowState) {
+      setHasUnread(false);
+
+      // İSTEĞE BAĞLI / BACKEND NOTU:
+      // Eğer Ayşeler backend'de "tümünü okundu işaretle" endpoint'i yaptıysa 
+      // buradaki yorum satırını açıp endpoint adını yazabilirsin:
+      /*
+      try {
+        await api.post("/notifications/mark-all-read");
+      } catch (err) {
+        console.log("Okundu işaretlenirken backend hatası:", err);
+      }
+      */
+    }
+  };
+
+  // 4. Dropdown Dışına Tıklayınca Kapatma
   useEffect(() => {
     function handleClickOutside(event) {
       if (notifWrapRef.current && !notifWrapRef.current.contains(event.target)) {
@@ -102,27 +136,27 @@ export default function AppHeader() {
         <div className="flex items-center gap-3">
           {loggedIn && (
             <div className="relative" ref={notifWrapRef}>
-              {/* ÇAN BUTONU */}
+              {/* ÇAN BUTONU (Tıklama fonksiyonu handleNotifClick olarak değiştirildi) */}
               <button 
-                onClick={() => setShowNotifications(!showNotifications)} 
+                onClick={handleNotifClick} 
                 className="relative flex items-center justify-center p-2 text-slate-600 rounded-full hover:bg-slate-50 active:scale-95 transition-all outline-none"
               >
                 <IoNotificationsOutline size={26} />
                 
-                {/* KIRMIZI BİLDİRİM BALONU */}
-                {notifications.length > 0 && (
+                {/* Sadece okunmamış yeni bildirim varsa kırmızı balon görünecek */}
+                {hasUnread && notifications.length > 0 && (
                   <span className="absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white ring-2 ring-white shadow-sm animate-pulse">
                     {notifications.length}
                   </span>
                 )}
               </button>
 
-              {/* ÇAN PANELİ (DROPDOWN) */}
+              {/* ÇAN DROPDOWN PANELİ */}
               {showNotifications && (
                 <div className="absolute top-12 right-0 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 max-h-96 overflow-y-auto">
                   <div className="px-4 py-2 border-b border-slate-50 font-bold text-sm text-slate-800 flex justify-between items-center">
                     <span>Bildirimler</span>
-                    <span className="text-xs bg-rose-50 text-rose-500 px-2 py-0.5 rounded-full">{notifications.length} Yeni</span>
+                    <span className="text-xs bg-rose-50 text-rose-500 px-2 py-0.5 rounded-full">{notifications.length} Adet</span>
                   </div>
                   
                   {notifications.length === 0 ? (
