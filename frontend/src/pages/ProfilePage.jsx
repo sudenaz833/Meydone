@@ -108,6 +108,13 @@ export default function ProfilePage() {
     loadData();
   }, [loadData]);
 
+  // Çıkış Yapma Fonksiyonu
+  const handleLogout = () => {
+    localStorage.removeItem(AUTH_TOKEN_KEY); // Token'ı siler
+    notifyAuthChanged(); // Kimlik değişimi bildirimini tetikler
+    navigate(appRoutes.home, { replace: true }); // Kullanıcıyı ana sayfaya yönlendirir
+  };
+
   async function handleUpdateProfile(e) {
     e.preventDefault();
     setSaveError("");
@@ -433,6 +440,7 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-8">
+      {/* 1. Profil Bilgileri Bölümü */}
       <section className={card}>
         <h1 className={headingPage}>Profil</h1>
         <p className={`mt-2 ${textMuted}`}>Hesap bilgileriniz (bazı alanlar salt okunur).</p>
@@ -487,6 +495,7 @@ export default function ProfilePage() {
         </dl>
       </section>
 
+      {/* 2. Profil Güncelleme Formu */}
       <section className={card} aria-labelledby="edit-heading">
         <h2 id="edit-heading" className={headingSection}>
           Profili güncelle
@@ -669,6 +678,7 @@ export default function ProfilePage() {
         </form>
       </section>
 
+      {/* 3. Konum Paylaşımı Bölümü */}
       <section className={card} aria-labelledby="share-location-heading">
         <h2 id="share-location-heading" className={headingSection}>
           Konum paylaşımı
@@ -698,6 +708,7 @@ export default function ProfilePage() {
         ) : null}
       </section>
 
+      {/* 4. Favori Mekanlar Bölümü */}
       <section className={card} aria-labelledby="favorites-heading">
         <h2 id="favorites-heading" className={headingSection}>
           Favori mekanlar
@@ -750,6 +761,7 @@ export default function ProfilePage() {
         )}
       </section>
 
+      {/* 5. Paylaşımlarım Bölümü */}
       <section className={card} aria-labelledby="posts-heading">
         <h2 id="posts-heading" className={headingSection}>
           Paylaşımlarım
@@ -877,6 +889,22 @@ export default function ProfilePage() {
         )}
       </section>
 
+      {/* 6. Çıkış Yapma Bölümü (İstediğin Gibi Danger Zone Üstüne Eklendi) */}
+      <section className={card} aria-labelledby="logout-heading">
+        <h2 id="logout-heading" className={headingSection}>
+          Oturumu kapat
+        </h2>
+        <p className={`mt-2 mb-4 ${textMuted}`}>Uygulamadan güvenli bir şekilde çıkış yapın.</p>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className={`${btnPrimary} w-full sm:w-auto bg-violet-600 hover:bg-violet-700`}
+        >
+          Çıkış yap
+        </button>
+      </section>
+
+      {/* 7. Tehlikeli Bölge (Hesabı Sil) */}
       <section className={dangerZone} aria-labelledby="danger-heading">
         <h2 id="danger-heading" className="text-lg font-semibold text-rose-900">
           Hesabı sil
