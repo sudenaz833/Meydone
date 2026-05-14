@@ -24,57 +24,44 @@ export default function AppHeader() {
 
   // --- BİLDİRİM STATE'LERİ ---
   const [notifications, setNotifications] = useState([]);
-  const [liveToast, setLiveToast] = useState(null); // Canlı ekranda beliren bildirim
 
   const hideBackButton = ['/', '/login', '/register'].includes(location.pathname);
 
-  // 1. Bildirimleri Sunucudan Çekme Fonksiyonu
+  // 1. Bildirimleri API'den Çekme Fonksiyonu
   const fetchNotifications = useCallback(async () => {
     if (!loggedIn) return;
     try {
-      // Backend bildirim endpoint'in hangisiyse ona göre güncelleyebilirsin (örn: /notifications veya /friends/pending)
       const { data } = await api.get("/friends/pending"); 
       const items = data?.data?.items || data?.data || [];
       
-      // Gelen verileri bildirim formatına map'liyoruz
-      const formattedNotifs = items.map(item => ({
-        id: item._id,
-        type: "friend_request",
-        senderName: item.sender?.username || item.name || "Biri",
-        text: "sana arkadaşlık isteği gönderdi.",
-        raw: item
-      }));
+      const formattedNotifs = items.map(item => {
+        const senderUsername = item.sender?.username || item.username || item.name || "Bir kullanıcı";
+        return {
+          id: item._id,
+          type: "friend_request",
+          senderName: senderUsername,
+          text: "sana arkadaşlık isteği gönderdi.",
+          raw: item
+        };
+      });
+
       setNotifications(formattedNotifs);
     } catch (err) {
       console.error("Bildirimler yüklenemedi:", err);
     }
   }, [loggedIn]);
 
-  // 2. Sayfa Açıldığında Verileri Yükle ve Canlı Simülasyon/WebSocket Kur
+  // 2. Belirli Aralıklarla Backend'i Yokla (Polling)
   useEffect(() => {
     if (loggedIn) {
       fetchNotifications();
       
-      // NOT: Eğer backend'de Socket.io kuruluysa buraya socket.on("notification") bağlayabilirsin.
-      // Şimdilik test edebilmen için buraya 10. saniyede canlı bildirim düşüren bir simülasyon ekliyorum:
-      const timer = setTimeout(() => {
-        const fakeLiveNotif = {
-          id: "fake-123",
-          type: "friend_request",
-          senderName: "ayse33",
-          text: "sana arkadaşlık isteği gönderdi."
-        };
-        
-        // Canlı bildirimi çanın altında göster
-        setLiveToast(fakeLiveNotif);
-        // Listeye de ekle
-        setNotifications(prev => [fakeLiveNotif, ...prev]);
+      // Her 10 saniyede bir arkada yeni bildirim sayısını güncellemek için kontrol eder
+      const interval = setInterval(() => {
+        fetchNotifications();
+      }, 10000);
 
-        // 5 saniye sonra canlı kutucuk ekrandan kaybolsun
-        setTimeout(() => setLiveToast(null), 5000);
-      }, 10000); // Site açıldıktan 10 saniye sonra tetiklenir
-
-      return () => clearTimeout(timer);
+      return () => clearInterval(interval);
     }
   }, [loggedIn, fetchNotifications]);
 
@@ -97,11 +84,9 @@ export default function AppHeader() {
       } else {
         await api.post(`/friends/reject/${id}`);
       }
-      // Listeden kaldır
       setNotifications(prev => prev.filter(n => n.id !== id));
     } catch (err) {
       console.error("İşlem başarısız:", err);
-      // Backend tam bağlanana kadar arayüzde donmasın diye yerelde de silebilirsin:
       setNotifications(prev => prev.filter(n => n.id !== id));
     }
   };
@@ -116,7 +101,7 @@ export default function AppHeader() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-100 pt-[env(safe-area-inset-top)]">
-      {/* Üst Bar: Logo, Geri Tuşu ve Bildirimler */}
+      {/* Üst Bar */}
       <div className="flex items-center justify-between px-4 h-14">
         <div className="flex items-center gap-2">
           {!hideBackButton && (
@@ -140,21 +125,16 @@ export default function AppHeader() {
                 className="p-2 text-slate-600 relative active:scale-95 transition-transform"
               >
                 <IoNotificationsOutline size={24} />
-                {/* Bildirim Noktası: Eğer bildirim varsa kırmızı nokta görünür */}
+                
+                {/* BİLDİRİM SAYISI BURADA: Eğer bildirim varsa sayısı ile birlikte kırmızı yuvarlak görünür */}
                 {notifications.length > 0 && (
-                  <span className="absolute top-2 right-2 w-2,5 h-2,5 bg-rose-500 rounded-full border-2 border-white animate-pulse"></span>
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-rose-500 text-white font-bold text-[10px] rounded-full border border-white flex items-center justify-center px-1 shadow-sm">
+                    {notifications.length}
+                  </span>
                 )}
               </button>
 
-              {/* --- CANLI ANLIK BİLDİRİM (TOAST) --- */}
-              {liveToast && (
-                <div className="absolute top-12 right-0 w-72 bg-slate-950 text-white text-xs p-3 rounded-xl shadow-2xl z-50 flex flex-col gap-1 border border-slate-800 animate-bounce">
-                  <div className="font-bold text-rose-400">🚨 Yeni Bildirim!</div>
-                  <div><span className="font-bold">@{liveToast.senderName}</span> {liveToast.text}</div>
-                </div>
-              )}
-
-              {/* --- BİLDİRİM PANELİ (DROPDOWN MENU) --- */}
+              {/* --- BİLDİRİM AÇILIR PANELİ --- */}
               {showNotifications && (
                 <div className="absolute top-12 right-0 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 max-h-96 overflow-y-auto">
                   <div className="px-4 py-2 border-b border-slate-50 font-bold text-sm text-slate-800 flex justify-between items-center">
@@ -174,7 +154,6 @@ export default function AppHeader() {
                             <span className="font-bold text-slate-900">@{notif.senderName}</span> {notif.text}
                           </div>
                           
-                          {/* Eğer bildirim arkadaşlık isteğiyse Kabul/Red butonlarını göster */}
                           {notif.type === "friend_request" && (
                             <div className="flex gap-2 justify-end">
                               <button 
