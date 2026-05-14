@@ -26,26 +26,29 @@ export default function AppHeader() {
 
   const hideBackButton = ['/', '/login', '/register'].includes(location.pathname);
 
-  // 1. Canlı Arama İstek Yönetimi ve Arka Plan Sayfayı Canlı Güncelleme
+  // 1. Canlı Arama İstek Yönetimi ve Arka Plan Sayfayı Debounce ile Canlı Güncelleme
   useEffect(() => {
     if (!loggedIn) return;
 
     const query = searchDraft.trim();
-    
-    if (location.pathname === appRoutes.venues) {
-      if (query) {
-        navigate({ pathname: appRoutes.venues, search: `?q=${encodeURIComponent(query)}` }, { replace: true });
-      } else {
-        navigate({ pathname: appRoutes.venues, search: "" }, { replace: true });
-      }
-    }
 
-    if (!query) {
-      setSuggestedVenues([]);
-      return;
-    }
-
+    // TARAYICIYI BOĞMAMAK İÇİN DEBOUNCE (GECİKTİRME) MANTIĞI KURDUK
     const delayDebounceFn = setTimeout(async () => {
+      
+      // Kullanıcı /mekanlar sayfasındaysa ve yazmayı 250ms boyunca durdurduysa URL'i güncelle
+      if (location.pathname === appRoutes.venues) {
+        if (query) {
+          navigate({ pathname: appRoutes.venues, search: `?q=${encodeURIComponent(query)}` }, { replace: true });
+        } else {
+          navigate({ pathname: appRoutes.venues, search: "" }, { replace: true });
+        }
+      }
+
+      if (!query) {
+        setSuggestedVenues([]);
+        return;
+      }
+
       try {
         const response = await api.get(`/venues?limit=100`);
         const items = response.data?.data?.items || response.data?.items || [];
@@ -54,18 +57,19 @@ export default function AppHeader() {
         console.error("Canlı arama hatası:", err);
         setSuggestedVenues([]);
       }
-    }, 250);
+    }, 250); // Kullanıcı her harfe bastığında değil, duraksadığında çalışır
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchDraft, location.pathname, navigate, loggedIn]);
 
+  // Sayfaya dışarıdan url ile q parametresi gelirse kutunun içini doldur (Sonsuz döngü engellendi)
   useEffect(() => {
     if (!loggedIn) return;
     const qParam = searchParams.get("q") ?? "";
     if (qParam && searchDraft !== qParam) {
       setSearchDraft(qParam);
     }
-  }, [searchParams, loggedIn, searchDraft]);
+  }, [searchParams, loggedIn]);
 
   // 2. Birleştirilmiş Bildirim Çekme ve Kullanıcı Bilgisi Güncelleme Mantığı
   const fetchAllData = useCallback(async () => {
@@ -204,7 +208,6 @@ export default function AppHeader() {
     if (!query) return [];
 
     const results = [];
-
     const safeVenues = Array.isArray(suggestedVenues) ? suggestedVenues : [];
 
     safeVenues.forEach(venue => {
@@ -233,7 +236,7 @@ export default function AppHeader() {
           if (!item) continue;
           
           const itemNameRaw = typeof item === "object" ? (item.name || item.text) : item;
-          const itemName = String(itemNameRaw || "");
+          const itemName = String(itemNameRaw || "").toLowerCase();
 
           if (checkWordStartsWith(itemName, query)) {
             isMatched = true;
@@ -256,9 +259,8 @@ export default function AppHeader() {
     return results;
   }, [searchDraft, suggestedVenues, loggedIn]);
 
-  // --- CEREN İŞTE BURAYI %100 ÇÖKMEYECEK ŞEKİLDE DÜZELTTİK ---
   const matchedCategories = useMemo(() => {
-    if (!loggedIn) return []; // Giriş yapmadıysa güvenle boş dizi dönecek, çökmeyecek
+    if (!loggedIn) return [];
     const draft = (searchDraft || "").trim();
     if (!draft) return [];
 
