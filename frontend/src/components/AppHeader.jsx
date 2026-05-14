@@ -118,18 +118,27 @@ export default function AppHeader() {
     setShowSuggestions(false);
   };
 
-  // --- SAF BAŞLANGIÇ KONTROL FONKSİYONU ---
-  // Metin tamamen kullanıcının yazdığı harflerle mi başlıyor diye bakar (Kelimelere bölmez, cümlenin en başına bakar)
+  // --- 1. KURAL: SAF BAŞLANGIÇ KONTROLÜ (Mekan ve Kategori için) ---
   const checkStrictStartsWith = (sourceText, queryText) => {
     const source = String(sourceText || "").trim().toLowerCase();
     const query = String(queryText || "").trim().toLowerCase();
     if (!source || !query) return false;
-
-    // Sadece ve sadece metnin en başı query ile başlıyorsa true döner
     return source.startsWith(query);
   };
 
-  // 3. SAF BAŞLANGICA GÖRE AKILLI FİLTRELEME MANTIĞI
+  // --- 2. KURAL: KELİME BAŞLANGICI KONTROLÜ (Menü öğeleri için) ---
+  const checkWordStartsWith = (sourceText, queryText) => {
+    const source = String(sourceText || "").trim().toLowerCase();
+    const query = String(queryText || "").trim().toLowerCase();
+    if (!source || !query) return false;
+
+    // Kelimelere bölüyoruz (Örn: "patlıcan", "kebabı")
+    const words = source.split(/\s+/);
+    // İçindeki kelimelerden herhangi biri "kebap" ile başlıyor mu?
+    return words.some(word => word.startsWith(query));
+  };
+
+  // 3. SEÇİCİ AKILLI FİLTRELEME MANTIĞI
   const processedSuggestions = useMemo(() => {
     const query = (searchDraft || "").trim().toLowerCase();
     if (!query) return [];
@@ -148,17 +157,17 @@ export default function AppHeader() {
       let isMatched = false;
       let tagText = turkishCatLabel;
 
-      // 1. Mekan Adı En Baştan mı Başlıyor? (Örn: "kö" -> "Köfteci...")
+      // Mekan Adı Kontrolü: Saf başlangıç ("kö" yazınca "Karaköy" elenir)
       if (checkStrictStartsWith(venueName, query)) {
         isMatched = true;
         tagText = turkishCatLabel;
       } 
-      // 2. Kategori En Baştan mı Başlıyor?
+      // Kategori Kontrolü: Saf başlangıç
       else if (checkStrictStartsWith(venueCategory, query) || checkStrictStartsWith(turkishCatLabel, query)) {
         isMatched = true;
         tagText = turkishCatLabel;
       }
-      // 3. Menü Öğeleri En Baştan mı Başlıyor? (Örn: "kö" -> "Köfte")
+      // Menü Öğeleri Kontrolü: Kelime bazlı başlangıç ("kebap" yazınca "Patlıcan Kebabı" gelir!)
       else if (venue.menu && Array.isArray(venue.menu)) {
         for (let i = 0; i < venue.menu.length; i++) {
           const item = venue.menu[i];
@@ -167,7 +176,7 @@ export default function AppHeader() {
           const itemNameRaw = typeof item === "object" ? (item.name || item.text) : item;
           const itemName = String(itemNameRaw || "");
 
-          if (checkStrictStartsWith(itemName, query)) {
+          if (checkWordStartsWith(itemName, query)) {
             isMatched = true;
             tagText = `Menü: ${String(itemNameRaw || "Ürün")}`;
             break; 
@@ -304,7 +313,7 @@ export default function AppHeader() {
             {/* Akıllı Etiketli Mekanlar */}
             {processedSuggestions.length === 0 && matchedCategories.length === 0 ? (
               <div className="px-3 py-4 text-center text-xs text-slate-400">
-                "{searchDraft}" ile başlayan bir mekan veya menü bulunamadı.
+                "{searchDraft}" ile uyuşan bir mekan veya menü bulunamadı.
               </div>
             ) : (
               <div className="flex flex-col gap-0.5">
