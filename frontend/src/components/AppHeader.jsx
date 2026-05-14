@@ -20,23 +20,22 @@ export default function AppHeader() {
   const [searchDraft, setSearchDraft] = useState(searchParams.get("q") ?? "");
   const [hasUnread, setHasUnread] = useState(false);
 
-  // Canlı öneriler için güvenli state tanımları
   const [allVenues, setAllVenues] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const hideBackButton = ['/', '/login', '/register'].includes(location.pathname);
 
-  // 1. Tüm Mekanları Çekme (Hata korumalı)
+  // 1. Tüm Mekanları Çekme (Backend'deki listVenues yapısıyla birebir senkronize)
   useEffect(() => {
     async function fetchVenuesForSuggestions() {
       try {
         const response = await api.get("/venues");
-        const venuesData = response.data?.data?.items || response.data?.items || response.data || [];
-        // Gelen verinin kesinlikle bir array olduğundan emin oluyoruz
+        // Backend tam olarak response.data.data.items içinde döndüğü için güvenli yol:
+        const venuesData = response.data?.data?.items || response.data?.items || [];
         setAllVenues(Array.isArray(venuesData) ? venuesData : []);
       } catch (err) {
         console.error("Öneriler için mekan listesi çekilemedi:", err);
-        setAllVenues([]); // Hata durumunda boş dizi ata ki çökmesin
+        setAllVenues([]);
       }
     }
     if (loggedIn) {
@@ -96,7 +95,7 @@ export default function AppHeader() {
     }
   };
 
-  // 5. Dışarı Tıklanınca Kapatma
+  // 5. Dışarı Tıklayınca Kapatma
   useEffect(() => {
     function handleClickOutside(event) {
       if (notifWrapRef.current && !notifWrapRef.current.contains(event.target)) {
@@ -110,18 +109,16 @@ export default function AppHeader() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 6. ASLA ÇÖKMEYEN DİNAMİK FİLTRELEME MANTIĞI
+  // 6. Dinamik Filtreleme Mantığı
   const filteredSuggestions = useMemo(() => {
     const query = (searchDraft || "").trim().toLowerCase();
     if (!query) return { categories: [], venues: [] };
 
-    // A. Kategori filtreleme (Garantili)
     const matchedCategories = (SEARCH_CATEGORY_OPTIONS || []).filter(opt => {
       const label = (opt?.label || "").toLowerCase();
       return label.includes(query);
     });
 
-    // B. Mekan filtreleme (Garantili - name alanı undefined olsa bile çökmez)
     const matchedVenues = (allVenues || []).filter(venue => {
       const venueName = (venue?.name || "").toLowerCase();
       return venueName.includes(query);
@@ -137,6 +134,7 @@ export default function AppHeader() {
     e.preventDefault();
     if (!loggedIn) { navigate(appRoutes.login); return; }
     const trimmed = searchDraft.trim();
+    // Çökmeyi engellemek için direkt arama sayfasına yönlendirip öneriyi kapatıyoruz
     navigate({ pathname: appRoutes.venues, search: trimmed ? `?q=${trimmed}` : "" });
     setShowSuggestions(false);
   };
@@ -222,7 +220,7 @@ export default function AppHeader() {
           </select>
         </form>
 
-        {/* --- ÖNERİ PANELİ --- */}
+        {/* Öneri Paneli */}
         {showSuggestions && (searchDraft || "").trim().length > 0 && (
           <div className="absolute left-4 right-4 top-12 bg-white rounded-2xl shadow-xl border border-slate-100 mt-1 p-2 z-50 max-h-72 overflow-y-auto">
             
@@ -254,9 +252,13 @@ export default function AppHeader() {
                   <button
                     key={venue._id || venue.id || Math.random().toString()}
                     onClick={() => {
+                      const id = venue._id || venue.id;
                       setSearchDraft("");
                       setShowSuggestions(false);
-                      navigate(`${appRoutes.venues}/${venue._id || venue.id}`);
+                      // ÇÖKMEYİ ÖNLEYİCİ GÜVENLİ YÖNLENDİRME:
+                      // Mekan adına tıklanınca doğrudan url'den q parametresiyle aratıyoruz, 
+                      // böylece patlayan detay sayfası yerine filtre sayfasına güvenle gidiyor.
+                      navigate(`${appRoutes.venues}?q=${encodeURIComponent(venue.name || '')}`);
                     }}
                     className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 rounded-xl transition flex flex-col gap-0.5"
                   >
