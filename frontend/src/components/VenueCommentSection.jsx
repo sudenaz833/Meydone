@@ -732,21 +732,19 @@ export default function VenueCommentSection({
                             <>
                               <p className="whitespace-pre-wrap break-words">{c.text}</p>
                               {c.photoUrl ? (
-                                /* --- CEREN'İN İSTEDİĞİ RESİM BÜYÜTME TETİKLEMESİ BURAYA EKLENDİ --- */
-                                <div className="mt-3 block">
+                                <a
+                                  href={c.photoUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="mt-3 block"
+                                >
                                   <img
                                     src={c.photoUrl}
                                     alt="Yorum görseli"
-                                    className="h-28 w-40 rounded-xl border border-rose-100/80 object-cover cursor-zoom-in hover:opacity-90 transition shadow-sm"
+                                    className="h-28 w-40 rounded-xl border border-rose-100/80 object-cover"
                                     loading="lazy"
-                                    onClick={() => {
-                                      // VenueDetailPage'deki lightbox sistemini uyandırıyoruz
-                                      window.dispatchEvent(
-                                        new CustomEvent("open-lightbox", { detail: c.photoUrl })
-                                      );
-                                    }}
                                   />
-                                </div>
+                                </a>
                               ) : null}
                             </>
                           )}
@@ -811,7 +809,7 @@ export default function VenueCommentSection({
                             </>
                           ) : null}
                         </div>
-                        <div className="mt-2 rounded-xl border border-rose-100/80 bg-white/70 p-3">
+                        <div className="mt-2 rounded-xl border border-rose-100/80/80 bg-white/70 p-3">
                           <p className="text-xs font-semibold text-stone-700">Yoruma cevaplar</p>
                           {Array.isArray(c.replies) && c.replies.length > 0 ? (
                             <ul className="mt-2 space-y-2">
