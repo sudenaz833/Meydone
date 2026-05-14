@@ -11,7 +11,7 @@ export default function AppHeader() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const notifWrapRef = useRef(null);
-  const searchWrapRef = useRef(null); // Arama alanının dışına tıklanınca kapatmak için
+  const searchWrapRef = useRef(null);
 
   const loggedIn = typeof window !== "undefined" && !!localStorage.getItem(AUTH_TOKEN_KEY);
   
@@ -20,22 +20,23 @@ export default function AppHeader() {
   const [searchDraft, setSearchDraft] = useState(searchParams.get("q") ?? "");
   const [hasUnread, setHasUnread] = useState(false);
 
-  // Canlı öneriler (Suggestions) için state'ler
+  // Canlı öneriler için güvenli state tanımları
   const [allVenues, setAllVenues] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const hideBackButton = ['/', '/login', '/register'].includes(location.pathname);
 
-  // 1. Önerilerde Kullanmak Üzere Tüm Mekanları Backend'den Çekme
+  // 1. Tüm Mekanları Çekme (Hata korumalı)
   useEffect(() => {
     async function fetchVenuesForSuggestions() {
       try {
         const response = await api.get("/venues");
-        // Backend'in veri yapısına göre array'i yakalıyoruz
         const venuesData = response.data?.data?.items || response.data?.items || response.data || [];
-        setAllVenues(venuesData);
+        // Gelen verinin kesinlikle bir array olduğundan emin oluyoruz
+        setAllVenues(Array.isArray(venuesData) ? venuesData : []);
       } catch (err) {
         console.error("Öneriler için mekan listesi çekilemedi:", err);
+        setAllVenues([]); // Hata durumunda boş dizi ata ki çökmesin
       }
     }
     if (loggedIn) {
@@ -75,7 +76,7 @@ export default function AppHeader() {
     }
   }, [loggedIn, notifications.length, showNotifications]);
 
-  // 3. Polling Yapısı (5 Saniyede Bir)
+  // 3. Polling Yapısı
   useEffect(() => {
     if (loggedIn) {
       fetchLikeNotifications();
@@ -86,7 +87,7 @@ export default function AppHeader() {
     }
   }, [loggedIn, fetchLikeNotifications]);
 
-  // 4. Çan Tıklama Fonksiyonu
+  // 4. Çan Tıklama
   const handleNotifClick = () => {
     const nextShowState = !showNotifications;
     setShowNotifications(nextShowState);
@@ -95,7 +96,7 @@ export default function AppHeader() {
     }
   };
 
-  // 5. Dışarı Tıklayınca Pencereleri Kapatma Kontrolü
+  // 5. Dışarı Tıklanınca Kapatma
   useEffect(() => {
     function handleClickOutside(event) {
       if (notifWrapRef.current && !notifWrapRef.current.contains(event.target)) {
@@ -109,20 +110,22 @@ export default function AppHeader() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 6. DİNAMİK FİLTRELEME MANTIĞI (Yazılan harfe göre süzme yapar)
+  // 6. ASLA ÇÖKMEYEN DİNAMİK FİLTRELEME MANTIĞI
   const filteredSuggestions = useMemo(() => {
-    const query = searchDraft.trim().toLowerCase();
+    const query = (searchDraft || "").trim().toLowerCase();
     if (!query) return { categories: [], venues: [] };
 
-    // A. Menü/Kategori Seçeneklerinden Eşleşenler (Örn: "k" -> Kebap, Kahve)
-    const matchedCategories = SEARCH_CATEGORY_OPTIONS.filter(opt =>
-      opt.label.toLowerCase().includes(query)
-    );
+    // A. Kategori filtreleme (Garantili)
+    const matchedCategories = (SEARCH_CATEGORY_OPTIONS || []).filter(opt => {
+      const label = (opt?.label || "").toLowerCase();
+      return label.includes(query);
+    });
 
-    // B. Mekan İsimlerinden Eşleşenler (Örn: "k" -> Köfteci Yusuf, Karaköy Güllüoğlu vb.)
-    const matchedVenues = allVenues.filter(venue =>
-      venue.name?.toLowerCase().includes(query)
-    );
+    // B. Mekan filtreleme (Garantili - name alanı undefined olsa bile çökmez)
+    const matchedVenues = (allVenues || []).filter(venue => {
+      const venueName = (venue?.name || "").toLowerCase();
+      return venueName.includes(query);
+    });
 
     return {
       categories: matchedCategories,
@@ -192,7 +195,7 @@ export default function AppHeader() {
         </div>
       </div>
 
-      {/* Arama Barı ve Canlı Öneriler Alanı */}
+      {/* Arama Barı */}
       <div className="px-4 pb-3 relative" ref={searchWrapRef}>
         <form onSubmit={onSearchSubmit} className="relative flex items-center gap-2">
           <div className="relative flex-grow">
@@ -219,11 +222,11 @@ export default function AppHeader() {
           </select>
         </form>
 
-        {/* --- DİNAMİK ARAMA SONUÇLARI LISTESI (DROPDOWN) --- */}
-        {showSuggestions && searchDraft.trim().length > 0 && (
+        {/* --- ÖNERİ PANELİ --- */}
+        {showSuggestions && (searchDraft || "").trim().length > 0 && (
           <div className="absolute left-4 right-4 top-12 bg-white rounded-2xl shadow-xl border border-slate-100 mt-1 p-2 z-50 max-h-72 overflow-y-auto">
             
-            {/* ÜST GRUP: Menü / Kategori Önerileri */}
+            {/* Kategoriler */}
             {filteredSuggestions.categories.length > 0 && (
               <div className="mb-2">
                 <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Menü / Kategoriler</div>
@@ -243,13 +246,13 @@ export default function AppHeader() {
               </div>
             )}
 
-            {/* ALT GRUP: Mekan Önerileri */}
+            {/* Mekanlar */}
             {filteredSuggestions.venues.length > 0 && (
               <div>
                 <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Mekanlar</div>
                 {filteredSuggestions.venues.map(venue => (
                   <button
-                    key={venue._id || venue.id}
+                    key={venue._id || venue.id || Math.random().toString()}
                     onClick={() => {
                       setSearchDraft("");
                       setShowSuggestions(false);
@@ -257,14 +260,14 @@ export default function AppHeader() {
                     }}
                     className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 rounded-xl transition flex flex-col gap-0.5"
                   >
-                    <span className="font-bold text-slate-900">📍 {venue.name}</span>
+                    <span className="font-bold text-slate-900">📍 {venue.name || "İsimsiz Mekan"}</span>
                     <span className="text-[10px] text-slate-400 pl-4">{venue.address || 'Mekanı incele'}</span>
                   </button>
                 ))}
               </div>
             )}
 
-            {/* Eşleşme Yoksa Gösterilecek Durum */}
+            {/* Sonuç Yoksa */}
             {filteredSuggestions.categories.length === 0 && filteredSuggestions.venues.length === 0 && (
               <div className="px-3 py-4 text-center text-xs text-slate-400">
                 "{searchDraft}" ile ilgili bir sonuç bulunamadı.
