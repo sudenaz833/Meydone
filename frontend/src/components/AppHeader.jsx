@@ -12,17 +12,12 @@ export default function AppHeader() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const searchWrapRef = useRef(null);
   const notifWrapRef = useRef(null);
 
   const loggedIn = typeof window !== "undefined" && !!localStorage.getItem(AUTH_TOKEN_KEY);
   const [user, setUser] = useState(null);
-  const [allVenues, setAllVenues] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchDraft, setSearchDraft] = useState(searchParams.get("q") ?? "");
-
-  // --- BİLDİRİM STATE'LERİ ---
   const [notifications, setNotifications] = useState([]);
 
   const hideBackButton = ['/', '/login', '/register'].includes(location.pathname);
@@ -31,24 +26,27 @@ export default function AppHeader() {
   const fetchAllNotifications = useCallback(async () => {
     if (!loggedIn) return;
     try {
-      // Arkadaşlık isteklerini ve genel bildirimleri eşzamanlı çağırıyoruz
       const responses = await Promise.allSettled([
         api.get("/friends/pending"),
-        api.get("/notifications").catch(() => ({ data: [] })) // Hata verirse patlamasın diye önlem
+        api.get("/notifications").catch(() => ({ data: [] }))
       ]);
 
       let combinedNotifications = [];
 
-      // A. Arkadaşlık İsteklerini Doğru Alanlarla Yakalama
+      // A. Arkadaşlık İsteklerini Yakalama
       if (responses[0].status === "fulfilled") {
         const resData = responses[0].value.data;
+        // Backend yapınıza göre array'i güvenli bir şekilde filtreleyip alıyoruz
         const friendItems = resData?.items || resData?.data?.items || resData?.data || (Array.isArray(resData) ? resData : []);
         
         const formattedFriends = friendItems.map(item => {
+          // ÖNEMLİ: Arkadaşlık isteğinin ana ID'sini (item._id) yakalıyoruz. 
+          // Eğer id burada eksik olursa kabul et/reddet butonları çalışmaz.
+          const requestId = item._id || item.id;
           const senderUsername = item.sender?.username || item.sender?.name || item.username || item.name || "Bir kullanıcı";
           
           return {
-            id: item._id,
+            id: requestId, 
             type: "friend_request",
             senderName: senderUsername,
             text: "sana arkadaşlık isteği gönderdi.",
@@ -64,7 +62,7 @@ export default function AppHeader() {
         const generalItems = resDataGen?.items || resDataGen?.data?.items || resDataGen?.data || (Array.isArray(resDataGen) ? resDataGen : []);
         
         const formattedGenerals = generalItems.map(item => ({
-          id: item._id,
+          id: item._id || item.id,
           type: item.type || "like",
           senderName: item.sender?.username || item.username || "Bir kullanıcı",
           text: item.type === "comment" ? "yorumunuza yanıt verdi." : "yorumunuzu beğendi.",
@@ -73,7 +71,7 @@ export default function AppHeader() {
         combinedNotifications = [...combinedNotifications, ...formattedGenerals];
       }
 
-      // Tarihe göre yeniden eskiye sırala
+      // Tarihe göre sırala (En yeni üstte)
       combinedNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setNotifications(combinedNotifications);
     } catch (err) {
@@ -81,7 +79,7 @@ export default function AppHeader() {
     }
   }, [loggedIn]);
 
-  // 2. Sayfa Açıldığında ve Her 10 Saniyede Bir Arkada Yenileme (Polling)
+  // 2. Polling Yapısı (10 saniyede bir günceller)
   useEffect(() => {
     if (loggedIn) {
       fetchAllNotifications();
@@ -92,7 +90,7 @@ export default function AppHeader() {
     }
   }, [loggedIn, fetchAllNotifications]);
 
-  // 3. Dışarı Tıklayınca Açılır Menüyü Kapatma
+  // 3. Dışarı Tıklayınca Kapatma
   useEffect(() => {
     function handleClickOutside(event) {
       if (notifWrapRef.current && !notifWrapRef.current.contains(event.target)) {
@@ -103,19 +101,24 @@ export default function AppHeader() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 4. Çan İçinden İsteği Kabul Et / Reddet
+  // 4. İstek Kabul / Reddet Buton Fonksiyonu
   const handleFriendRequest = async (id, action) => {
+    if (!id) {
+      console.error("İstek ID bulunamadı!");
+      return;
+    }
     try {
       if (action === "accept") {
         await api.post(`/friends/accept/${id}`);
       } else {
         await api.post(`/friends/reject/${id}`);
       }
-      // İşlem başarılı olunca arayüzden anlık uçur
+      // Başarılı ise arayüzden kaldır
       setNotifications(prev => prev.filter(n => n.id !== id));
     } catch (err) {
-      console.error("İstek işlenirken hata oluştu:", err);
-      setNotifications(prev => prev.filter(n => n.id !== id));
+      console.error(`İstek ${action} edilirken hata oluştu:`, err);
+      // Hata durumunda listeyi backend'den tekrar tazeleyerek senkronize edin
+      fetchAllNotifications();
     }
   };
 
@@ -124,19 +127,14 @@ export default function AppHeader() {
     if (!loggedIn) { navigate(appRoutes.login); return; }
     const trimmed = searchDraft.trim();
     navigate({ pathname: appRoutes.venues, search: trimmed ? `?q=${trimmed}` : "" });
-    setShowSuggestions(false);
   };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-100 pt-[env(safe-area-inset-top)]">
-      {/* Üst Bar */}
       <div className="flex items-center justify-between px-4 h-14">
         <div className="flex items-center gap-2">
           {!hideBackButton && (
-            <button 
-              onClick={() => navigate(-1)} 
-              className="p-2 -ml-2 rounded-full active:bg-rose-50 text-rose-500"
-            >
+            <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full active:bg-rose-50 text-rose-500">
               <IoChevronBack size={24} />
             </button>
           )}
@@ -148,7 +146,7 @@ export default function AppHeader() {
         <div className="flex items-center gap-3">
           {loggedIn && (
             <div className="relative" ref={notifWrapRef}>
-              {/* Çan Butonu: Düzenlenmiş flex yerleşimi */}
+              {/* Çan Butonu */}
               <button 
                 onClick={() => setShowNotifications(!showNotifications)} 
                 className="relative flex items-center justify-center p-2 text-slate-600 rounded-full hover:bg-slate-50 active:scale-95 transition-all outline-none"
@@ -156,7 +154,7 @@ export default function AppHeader() {
               >
                 <IoNotificationsOutline size={26} />
                 
-                {/* DİNAMİK KIRMIZI DAİRE SAYACI (Tam çanın omzuna hizalandı) */}
+                {/* DİNAMİK BİLDİRİM SAYACI */}
                 {notifications.length > 0 && (
                   <span className="absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white ring-2 ring-white shadow-sm animate-pulse">
                     {notifications.length}
@@ -164,7 +162,7 @@ export default function AppHeader() {
                 )}
               </button>
 
-              {/* --- BİLDİRİM PANELİ DROPDOWN --- */}
+              {/* BİLDİRİM PANELİ DROPDOWN */}
               {showNotifications && (
                 <div className="absolute top-12 right-0 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 max-h-96 overflow-y-auto">
                   <div className="px-4 py-2 border-b border-slate-50 font-bold text-sm text-slate-800 flex justify-between items-center">
@@ -225,7 +223,6 @@ export default function AppHeader() {
               placeholder="Mekan veya menü ara..."
               value={searchDraft}
               onChange={(e) => setSearchDraft(e.target.value)}
-              onFocus={() => setShowSuggestions(true)}
               className="w-full bg-slate-100 border-none rounded-xl py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
             />
           </div>
