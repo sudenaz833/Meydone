@@ -77,9 +77,6 @@ export default function ProfilePage() {
     setError("");
 
     try {
-      // --- CEREN BURAYA DİKKAT: PROMISE.ALL'U GÜVENLİ HALE GETİRDİK ---
-      // İstekleri tek bir sepete koyup biri patlayınca hepsini yakmıyoruz.
-      // Her isteğin sonuna .catch() ekledik ki 403 hatası verse bile sayfa açılmaya devam etsin.
       
       const [meRes, favRes, postsRes] = await Promise.all([
         api.get("/auth/me").catch(err => { console.error("Kullanıcı çekilemedi:", err); return null; }),
@@ -546,14 +543,30 @@ export default function ProfilePage() {
           )}
         </section>
       )}
-
-      {/* 5. Paylaşımlarım Bölümü */}
+{/* 5. Paylaşımlarım Bölümü */}
       <section className={card} aria-labelledby="posts-heading">
-        <h2 id="posts-heading" className={headingSection}>Paylaşımlarım</h2>
+        {/* Admin ise 'Mekanda Yeni Fırsatlar', değilse 'Paylaşımlarım' yazar */}
+        <h2 id="posts-heading" className={headingSection}>
+          {user?.role === 'admin' ? "Mekanda Yeni Fırsatlar" : "Paylaşımlarım"}
+        </h2>
+        
         <form className="mt-6 space-y-4" onSubmit={createPost}>
           <div>
-            <label htmlFor="post-text" className={labelUi}>Ne paylaşmak istiyorsun?</label>
-            <textarea id="post-text" rows={4} maxLength={1000} value={postText} onChange={(e) => setPostText(e.target.value)} className={inputUi} placeholder="Bugün yeni bir mekan denedim..." />
+            {/* Admin ise 'Ne duyurmak istiyorsun?', değilse 'Ne paylaşmak istiyorsun?' yazar */}
+            <label htmlFor="post-text" className={labelUi}>
+              {user?.role === 'admin' ? "Ne duyurmak istiyorsun?" : "Ne paylaşmak istiyorsun?"}
+            </label>
+            
+            <textarea 
+              id="post-text" 
+              rows={4} 
+              maxLength={1000} 
+              value={postText} 
+              onChange={(e) => setPostText(e.target.value)} 
+              className={inputUi} 
+              /* Admin ise 'Bugün yeni bir kampanya...', değilse senin istediğin gibi boş kalır veya eski metin durur */
+              placeholder={user?.role === 'admin' ? "Bugün yeni bir fırsat/kampanya ekleyin..." : "Bugün yeni bir mekan denedim..."} 
+            />
           </div>
           <div>
             <label htmlFor="post-photo-file" className={labelUi}>Fotoğraf (opsiyonel)</label>
@@ -565,7 +578,10 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
-          <button type="submit" disabled={postBusy} className={btnPrimary}>{postBusy ? "Paylaşılıyor…" : "Paylaş"}</button>
+          {/* Admin ise 'Duyur/Paylaş' metni de değişebilir */}
+          <button type="submit" disabled={postBusy} className={btnPrimary}>
+            {postBusy ? "Paylaşılıyor…" : (user?.role === 'admin' ? "Fırsatı Yayınla" : "Paylaş")}
+          </button>
         </form>
 
         {posts.length === 0 ? <p className={`mt-8 ${textMuted}`}>Henüz paylaşım yok.</p> : (

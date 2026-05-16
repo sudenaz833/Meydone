@@ -5,15 +5,22 @@ import { API_BASE_URL, AUTH_TOKEN_KEY } from '../utils/constants';
 // ... diğer importlar aynı kalsın
 
 const getBaseURL = () => {
-   
-  if (typeof window !== 'undefined' && 
-     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-    return "http://localhost:9000/api"; 
+  if (typeof window !== 'undefined') {
+    // 1. EĞER MOBİLDEYSEK (Capacitor ortamıysa) KESİNLİKLE CANLIYA GİT
+    if (window.location.protocol === 'capacitor:') {
+      return "https://meydone-production.up.railway.app/api";
+    }
+
+    // 2. Eğer web tarayıcısındaysak ve lokaldeysek Docker/Localhost'a git
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return "http://localhost:9000/api"; 
+    }
   }
 
-  // 2. Eğer Vercel veya iPhone üzerinden açıyorsan (Canlı test için)
+  // 3. Canlı web sitesi (Vercel) için
   return "https://meydone-production.up.railway.app/api";
 };
+
 
 
 // ... geri kalan api.interceptors kısımları tamamen aynı kalabilir
