@@ -5,4 +5,5 @@ export const AUTH_TOKEN_KEY = 'meydone_token';
 
 
 
-export const API_BASE_URL = import.meta.env.VITE_API_TARGET || "https://meydone-production.up.railway.app/api";
+//export const API_BASE_URL = import.meta.env.VITE_API_TARGET || "https://meydone-production.up.railway.app/api";
+export const API_BASE_URL = "https://meydone-production.up.railway.app/api";
