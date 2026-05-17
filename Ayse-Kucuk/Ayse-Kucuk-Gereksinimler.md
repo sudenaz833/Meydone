@@ -1,6 +1,7 @@
 1. **Saat Güncelleme** (Ayşe Küçük)
    - **API Metodu:** `PUT /admin/venues/{id}/hours`
    - **Açıklama:** Sistem, yetkili yöneticinin ilgili mekana ait çalışma saatlerini güncelleyebilmesini sağlamalıdır. Güncellenen bilgiler kullanıcı arayüzünde anlık ve doğru şekilde görüntülenmelidir.
+   //
 
 2. **Konum Güncelleme** (Ayşe Küçük)
    - **API Metodu:** `PUT /admin/venues/{id}/location`
