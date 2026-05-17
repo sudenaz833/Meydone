@@ -78,7 +78,7 @@ app.post('/api/ceren/auth/register', async (req, res) => {
 app.post('/api/ceren/auth/login', async (req, res) => {
     const { kullaniciadi, sifre } = req.body;
     
-    // Veritabanından kontrol edelim
+    // Veritabanından verileri kontrol edelim.
     const kullanici = await Kullanici.findOne({ kullaniciadi });
     if (!kullanici || kullanici.sifre !== sifre) {
         return res.status(401).json({ message: "Kullanıcı adı veya şifre yanlış!" });
