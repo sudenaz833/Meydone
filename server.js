@@ -91,7 +91,7 @@ app.post('/api/ceren/auth/login', async (req, res) => {
 // --- PROFİL GÜNCELLE VE KARA LİSTEYE AL (Test Noktası) ---
 app.put('/api/sude/users/profile', tokenDogrula, async (req, res) => {
     try {
-        // Burada DB güncelleme kodların olacak...
+       
         
         // İşlem bitince mevcut token'ı Redis'e atıyoruz
         const tokenKey = `bl_${req.token}`;
