@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Kodları GitHub'dan çekiyoruz
+                // Kodları GitHub'dan çekiyoruz.
                 git branch: 'main', url: 'https://github.com/sudenaz833/Meydone.git'
             }
         }
