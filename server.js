@@ -5,9 +5,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const cors = require('cors'); // 1. CORS PAKETİNİ İÇERİ ALDIK
 
-// --- 0. MODELİ İÇERİ AL (Burası önemli!) ---
-// Kullanici modelinin olduğu dosya yolunu kendi projeninkine göre düzelt kanki
-// Örn: const Kullanici = require('./models/User'); 
+
 
 // 1. AYARLAR
 process.env.JWT_SECRET = 'meydone-ozel-gizli-anahtar-123'; 
