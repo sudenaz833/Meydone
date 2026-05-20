@@ -13,7 +13,7 @@ const cors = require('cors'); // 1. CORS PAKETİNİ İÇERİ ALDIK
 process.env.JWT_SECRET = 'meydone-ozel-gizli-anahtar-123'; 
 const app = express();
 
-// 2. MOBİL İÇİN CORS DUVARINI YIKTIK
+
 app.use(cors({
     origin: '*', 
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
