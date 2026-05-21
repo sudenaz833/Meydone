@@ -41,3 +41,4 @@
     - **API Metodu:** `GET /notifications/comment-likes`
     - **Açıklama:** Sistem, kullanıcıların yaptıkları yorumlara başka kullanıcılar tarafından beğeni(like) bırakılması durumunda, ilgili kullanıcıya bildirim gönderilir.
 
+//

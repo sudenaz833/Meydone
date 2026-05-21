@@ -1,4 +1,5 @@
 services:
+  # 1. MongoDB Kapsayıcısı (Slayta tam uyumlu)
   mongodb_kapsayici:
     image: mongo:7
     container_name: mongodb_kapsayici
@@ -25,7 +26,7 @@ services:
     environment:
       - PORT=9000
       - NODE_ENV=development
-      # Slayttaki kural: mongodb://mongodbservisadi:port/veritabaniadi (DOĞRU)
+      # Slayttaki kural: mongodb://mongodbservisadi:port/veritabaniadi
       - MONGODB_URI=mongodb://mongodb_kapsayici:27017/meydone
       - JWT_SECRET=meydone1
     depends_on:
@@ -42,8 +43,9 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # İstekler tarayıcı üzerinden backend portuna (9000) localhost ile gitmeli
-      - VITE_API_URL=http://localhost:9000/api/
+      # Slayttaki kural: http://servisadi:port
+      # Docker ağı içinde localhost yerine servis adını (meydone_api_kapsayici) kullanmalısın
+      - VITE_API_URL=http://meydone_frontend_kapsayici:9000/api/
     depends_on:
       - meydone_api_kapsayici
 
