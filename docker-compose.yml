@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   # 1. MongoDB Kapsayıcısı (Slayta tam uyumlu)
   mongodb_kapsayici:
@@ -45,9 +47,24 @@ services:
     environment:
       # Slayttaki kural: http://servisadi:port
       # Docker ağı içinde localhost yerine servis adını (meydone_api_kapsayici) kullanmalısın
-      - VITE_API_URL=http://meydone_frontend_kapsayici:9000/api/
+      - VITE_API_URL=http://meydone_api_kapsayici:9000/api/
     depends_on:
       - meydone_api_kapsayici
 
+  # 4. Jenkins Kapsayıcısı (YENİ EKLENDİ)
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins_kapsayici
+    restart: unless-stopped
+    user: root # Jenkins'in docker komutlarını çalıştırabilmesi için root yetkisi şart
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_data:/var/jenkins_home
+      # KRİTİK BAĞLANTI: Jenkins içinden ana makinedeki docker'ı tetiklemek için soket paylaşımı
+      - /var/run/docker.sock:/var/run/docker.sock
+
 volumes:
   meydone_data:
+  jenkins_data: # Jenkins verilerinin kaybolmaması için volume tanımı
