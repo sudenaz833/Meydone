@@ -7,7 +7,7 @@ const cors = require('cors');
 
 
 
-// 1. AYARLAR
+
 process.env.JWT_SECRET = 'meydone-ozel-gizli-anahtar-123'; 
 const app = express();
 
@@ -20,7 +20,7 @@ app.use(cors({
 
 app.use(express.json());
 
-// 2. REDIS BAĞLANTISI
+//  REDIS BAĞLANTISI
 const redisClient = redis.createClient();
 redisClient.on("error", (err) => console.log("❌ Redis Hatası:", err));
 redisClient.on("connect", () => console.log("✅ Redis Bağlantısı Kuruldu!"));
