@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const redis = require('redis');
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const cors = require('cors'); // 1. CORS PAKETİNİ İÇERİ ALDIK
+const cors = require('cors'); 
 
 
 
