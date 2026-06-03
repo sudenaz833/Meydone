@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     options {
-        // 1. ÇÖZÜM: Jenkins'in arka planda otomatik ve kontrolsüz checkout yapmasını engeller
+        
         skipDefaultCheckout() 
     }
 
@@ -22,6 +22,7 @@ pipeline {
                 echo 'Ana dizindeki docker-compose kullanılarak sistem ayağa kaldırılıyor...'
                 // sh komutlarında env saklamak yerine tek satırda çalıştırmak daha sağlıklıdır
                 sh 'export JWT_SECRET=meydone1 && docker compose down'
+                sh 'export JWT_SECRET=meydone1 && docker compose run -d -p 9001:9000 --name meydone_api_yeni backend'
                 sh 'export JWT_SECRET=meydone1 && docker compose up -d --build'
             }
         }
