@@ -1,19 +1,26 @@
 pipeline {
     agent any
 
+    options {
+        // 1. ÇÖZÜM: Jenkins'in arka planda otomatik ve kontrolsüz checkout yapmasını engeller
+        skipDefaultCheckout() 
+    }
+
     stages {
-        stage('Checkout') {
+        stage('Sistemi Temizle ve Checkout') {
             steps {
-                // Kodları GitHub'dan çekiyoruz.
+                // 2. ÇÖZÜM: Klasörde kalan eski bozuk git kalıntılarını pırıl pırıl temizler
+                cleanWs() 
+                
+                echo 'Kodlar GitHub\'dan temiz bir şekilde çekiliyor...'
                 git branch: 'main', url: 'https://github.com/sudenaz833/Meydone.git'
             }
         }
 
         stage('Build and Deploy') {
             steps {
-                echo 'Ana dizindeki docker-compose kullanılarak sistem ayağa kaldırılıyoor...'
-                // Artık dir('backend') kullanmıyoruz çünkü docker-compose.yaml ana dizinde.
-                // JWT_SECRET gibi değişkenleri komut satırından veya Jenkins Credentials içinden verebilirsiniz.
+                echo 'Ana dizindeki docker-compose kullanılarak sistem ayağa kaldırılıyor...'
+                // sh komutlarında env saklamak yerine tek satırda çalıştırmak daha sağlıklıdır
                 sh 'export JWT_SECRET=meydone1 && docker compose down'
                 sh 'export JWT_SECRET=meydone1 && docker compose up -d --build'
             }
@@ -24,7 +31,6 @@ pipeline {
                 echo 'Sistemin ayağa kalkması bekleniyor (15 saniye)...'
                 sleep 15
                 
-                // Backend ve Frontend kontrolü
                 echo 'Backend kontrol ediliyor...'
                 sh 'curl -f http://localhost:9000 || echo "Backend henüz hazır değil!"'
                 
