@@ -29,7 +29,7 @@ redisClient.on("connect", () => console.log("✅ Redis Bağlantısı Kuruldu!"))
     await redisClient.connect();
 })();
 
-// 3. KARA LİSTE KONTROLÜ (Middleware)
+// 3. KARA LİSTE KONTROLÜ 
 const tokenDogrula = async (req, res, next) => {
     const authHeader = req.headers["authorization"];
     const token = authHeader && authHeader.split(" ")[1];
