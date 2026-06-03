@@ -55,7 +55,7 @@ const tokenDogrula = async (req, res, next) => {
     }
 };
 
-// 4. ROTALAR
+
 
 // --- KAYIT OL ---
 app.post('/api/ceren/auth/register', async (req, res) => {
