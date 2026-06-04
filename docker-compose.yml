@@ -16,7 +16,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # 2. REST API Kapsayıcısı (Slayta tam uyumlu)
   meydone_api_kapsayici:
     build:
       context: ./backend
